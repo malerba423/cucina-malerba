@@ -1,0 +1,13 @@
+{
+  "hosting": {
+    "rewrites": [
+      {
+        "source": "**",
+        "run": {
+          "serviceId": "cucina-malerba",
+          "region": "us-west1"
+        }
+      }
+    ]
+  }
+}

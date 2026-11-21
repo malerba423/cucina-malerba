@@ -1,0 +1,4 @@
+# Left open on purpose: every page sends "noindex", and crawlers must be
+# allowed to fetch a page to see that.
+User-agent: *
+Allow: /

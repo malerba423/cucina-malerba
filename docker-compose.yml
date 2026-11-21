@@ -1,0 +1,33 @@
+# Local development.
+#   npm run db:up                       -> just Postgres (then `npm run dev`)
+#   docker compose --profile full up    -> Postgres + the production container
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: cucina
+      POSTGRES_PASSWORD: cucina
+      POSTGRES_DB: cucina
+    ports:
+      - "5433:5432"
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cucina"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    profiles: ["full"]
+    build: .
+    environment:
+      DATABASE_URL: postgres://cucina:cucina@db:5432/cucina
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  dbdata:
