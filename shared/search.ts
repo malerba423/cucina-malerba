@@ -195,7 +195,9 @@ const MODIFIERS = new Set(
   ].map(stem),
 );
 
-const core = (text: string) => words(text).filter((w) => !MODIFIERS.has(w) && !/^\d/.test(w));
+/** The words that say what an ingredient is ("freshly ground black pepper" → pepper). */
+export const coreWords = (text: string) => words(text).filter((w) => !MODIFIERS.has(w) && !/^\d/.test(w));
+const core = coreWords;
 
 /** Lines a recipe doesn't really need: garnishes, "to serve", "optional". */
 export function isOptional(i: SearchDoc['ingredients'][number]): boolean {

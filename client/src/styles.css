@@ -1361,6 +1361,378 @@ select {
   font-weight: 600;
 }
 
+/* ---------- cook mode ---------- */
+.cook {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--bg);
+}
+.cook-bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 10px clamp(12px, 3vw, 28px);
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+.cook-exit {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+  color: var(--ink);
+  font-size: 24px;
+  line-height: 1;
+  text-decoration: none;
+}
+.cook-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.cook-title strong {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-family: var(--font-display);
+  font-size: 18px;
+}
+.cook-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cook-tools .toggle button {
+  height: 36px;
+  padding: 0 10px;
+}
+.aa {
+  font-family: var(--font-body);
+  font-weight: 700;
+}
+.aa-m {
+  font-size: 12px;
+}
+.aa-l {
+  font-size: 15px;
+}
+.aa-xl {
+  font-size: 19px;
+}
+.wake {
+  white-space: nowrap;
+  color: var(--ink-muted);
+}
+.wake.on {
+  color: var(--brand);
+}
+@media (max-width: 720px) {
+  .cook-tools {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+.cook-progress {
+  height: 4px;
+  background: var(--line-soft);
+}
+.cook-progress span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.25s ease;
+}
+
+.cook-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+@media (min-width: 760px) {
+  .cook-body {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+}
+@media (min-width: 1150px) {
+  .cook-body {
+    grid-template-columns: 270px minmax(0, 1fr) 340px;
+  }
+}
+.cook-rail {
+  display: none;
+}
+@media (min-width: 1150px) {
+  .cook-rail {
+    display: block;
+    position: sticky;
+    top: 70px;
+    max-height: calc(100dvh - 160px);
+    overflow-y: auto;
+    padding: 18px 12px 18px 20px;
+    border-right: 1px solid var(--line);
+  }
+}
+.cook-rail ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.cook-rail button {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+.cook-rail button .mono {
+  margin-right: 6px;
+  color: var(--accent);
+}
+.cook-rail button.is-past {
+  opacity: 0.6;
+}
+.cook-rail button[aria-current='step'] {
+  background: var(--chip);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.cook-main {
+  padding: clamp(20px, 4vw, 48px) clamp(16px, 4vw, 48px);
+  min-width: 0;
+}
+.cook-step-number {
+  margin: 0 0 12px;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+}
+.cook-step-text {
+  max-width: 34em;
+  margin: 0;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.size-m .cook-step-text {
+  font-size: clamp(21px, 2.6vw, 26px);
+}
+.size-l .cook-step-text {
+  font-size: clamp(25px, 3.6vw, 34px);
+}
+.size-xl .cook-step-text {
+  font-size: clamp(30px, 5vw, 46px);
+}
+.time-button {
+  display: inline;
+  margin: 0 0.05em;
+  padding: 0.02em 0.4em;
+  border: 2px solid var(--accent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+.time-button:hover,
+.time-button:focus-visible {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.time-button span {
+  font-size: 0.7em;
+  vertical-align: 0.1em;
+}
+.cook-gather h1,
+.cook-done h1 {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: clamp(28px, 5vw, 44px);
+  line-height: 1.1;
+}
+.cook-gather {
+  max-width: 720px;
+}
+.cook-gather .ingredient-group + .ingredient-group {
+  margin-top: 14px;
+}
+.checklist-large label {
+  padding: 14px 0;
+  font-size: 18px;
+}
+.size-xl .checklist-large label {
+  font-size: 22px;
+}
+.size-m .checklist-large label {
+  font-size: 16px;
+}
+.checklist-large input {
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+}
+.cook-done .row {
+  margin-top: 20px;
+}
+
+.cook-side {
+  padding: 0 clamp(16px, 4vw, 48px) 24px;
+}
+@media (min-width: 760px) {
+  .cook-side {
+    position: sticky;
+    top: 70px;
+    max-height: calc(100dvh - 160px);
+    overflow-y: auto;
+    padding: 24px 20px;
+    border-left: 1px solid var(--line);
+  }
+}
+.cook-side .label {
+  margin: 0 0 8px;
+}
+.size-l .cook-side .checklist label,
+.size-xl .cook-side .checklist label {
+  font-size: 17px;
+}
+.cook-all {
+  margin-top: 14px;
+}
+.cook-all summary {
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+.cook-foot {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  padding: 10px clamp(12px, 3vw, 28px) calc(10px + env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+}
+.cook-nav {
+  display: flex;
+  gap: 10px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.cook-nav .button {
+  justify-content: center;
+  height: 56px;
+  font-size: 17px;
+}
+.cook-prev {
+  flex: 1;
+}
+.cook-next {
+  flex: 2;
+}
+.cook-nav .button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.timer-tray {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 900px;
+  margin: 0 auto 10px;
+  padding: 0;
+  list-style: none;
+}
+.timer-chip {
+  flex: 1 1 260px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px 10px;
+  padding: 8px 12px;
+  border: 1.5px solid var(--ink);
+  border-radius: 12px;
+  background: var(--bg);
+}
+.timer-label {
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-muted);
+  text-align: left;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.timer-clock {
+  grid-row: span 2;
+  font-size: 26px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.timer-actions {
+  display: flex;
+  gap: 4px;
+}
+.timer-actions button {
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  cursor: pointer;
+}
+.timer-chip.is-paused .timer-clock {
+  opacity: 0.55;
+}
+.timer-chip.is-done {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+  animation: timer-flash 1s ease-in-out infinite alternate;
+}
+.timer-chip.is-done .timer-label {
+  color: var(--accent-ink);
+}
+@keyframes timer-flash {
+  from {
+    filter: brightness(1);
+  }
+  to {
+    filter: brightness(1.25);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .timer-chip.is-done {
+    animation: none;
+  }
+  .cook-progress span {
+    transition: none;
+  }
+}
+
 /* ---------- people (owner) ---------- */
 .people-page {
   max-width: 1120px;

@@ -14,6 +14,7 @@ import { PeoplePage } from './pages/PeoplePage';
 import { EditRecipePage } from './pages/EditRecipePage';
 import { ImportPage } from './pages/ImportPage';
 import { FridgePage } from './pages/FridgePage';
+import { CookPage } from './pages/CookPage';
 
 export function App() {
   return (
@@ -28,6 +29,7 @@ export function App() {
 function Shell() {
   const { pathname } = useRouter();
   const editMatch = /^\/recipes\/([^/]+)\/edit\/?$/.exec(pathname);
+  const cookMatch = /^\/recipes\/([^/]+)\/cook\/?$/.exec(pathname);
   const recipeMatch = pathname === '/recipes/new' ? null : /^\/recipes\/([^/]+)\/?$/.exec(pathname);
 
   let page;
@@ -35,6 +37,7 @@ function Shell() {
   else if (pathname === '/recipes/new') page = <EditRecipePage />;
   else if (pathname === '/import' || pathname === '/import/') page = <ImportPage />;
   else if (pathname === '/fridge' || pathname === '/fridge/') page = <FridgePage />;
+  else if (cookMatch) page = <CookPage slug={decodeURIComponent(cookMatch[1])} />;
   else if (editMatch) page = <EditRecipePage slug={decodeURIComponent(editMatch[1])} />;
   else if (recipeMatch) page = <RecipePage slug={decodeURIComponent(recipeMatch[1])} />;
   else if (pathname === '/signin') page = <SignInPage />;
@@ -42,10 +45,13 @@ function Shell() {
   else if (pathname === '/people') page = <PeoplePage />;
   else page = <NotFoundPage />;
 
-  const isRecipe = recipeMatch != null;
+  const setsOwnTitle = recipeMatch != null || cookMatch != null;
   useEffect(() => {
-    if (!isRecipe) document.title = SITE_NAME; // the recipe page sets its own title
-  }, [isRecipe, pathname]);
+    if (!setsOwnTitle) document.title = SITE_NAME; // recipe pages and cook mode set their own title
+  }, [setsOwnTitle, pathname]);
+
+  // Cook mode is full screen: no site header.
+  if (cookMatch) return <div className="page page-cook">{page}</div>;
 
   return (
     <div className="page">

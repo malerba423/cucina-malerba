@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { SITE_NAME } from '../../../shared/site';
-import type { IngredientLine, RecipeDetail } from '../../../shared/types';
+import type { RecipeDetail } from '../../../shared/types';
 import { SOURCE_LABELS } from '../../../shared/types';
-import { formatMinutes, formatQuantity, formatTimer, presentIngredient, UNIT_SYSTEMS, type UnitSystem } from '../../../shared/units';
+import { formatMinutes, formatQuantity, formatTimer } from '../../../shared/units';
+import { groupIngredients, IngredientText, useUnitSystem } from '../ingredients';
 import { useApi } from '../api';
 import { useAuth } from '../auth';
 import { canEditRecipe } from '../../../shared/auth';
@@ -42,28 +43,12 @@ function Recipe({ recipe }: { recipe: RecipeDetail }) {
   const canEdit = canEditRecipe(user, recipe.addedBy?.id ?? null);
   const base = recipe.servings ?? null;
   const [amount, setAmount] = useState<number>(base ?? 1); // servings, or a multiplier when servings is unknown
-  const [system, setSystem] = useState<UnitSystem>(() => {
-    try {
-      const saved = localStorage.getItem('units');
-      return UNIT_SYSTEMS.includes(saved as UnitSystem) ? (saved as UnitSystem) : 'us';
-    } catch {
-      return 'us';
-    }
-  });
+  const [system, chooseSystem] = useUnitSystem();
   const [checked, setChecked] = useState<Set<number>>(new Set());
 
   const factor = base ? amount / base : amount;
   const step = base ? (base > 12 ? Math.max(1, Math.round(base / 4)) : 1) : 0.5;
   const minimum = step;
-
-  const chooseSystem = (s: UnitSystem) => {
-    setSystem(s);
-    try {
-      localStorage.setItem('units', s);
-    } catch {
-      // storage blocked: the choice just won't be remembered
-    }
-  };
 
   const groups = useMemo(() => groupIngredients(recipe.ingredients), [recipe.ingredients]);
   const source = describeSource(recipe);
@@ -117,6 +102,11 @@ function Recipe({ recipe }: { recipe: RecipeDetail }) {
           </div>
 
           <div className="actions no-print">
+            {recipe.steps.length > 0 && (
+              <Link to={`/recipes/${encodeURIComponent(recipe.slug)}/cook${factor !== 1 ? `?amount=${amount}` : ''}`} className="button button-primary">
+                Start cooking
+              </Link>
+            )}
             <button type="button" className="button" onClick={() => window.print()}>
               Print card
             </button>
@@ -239,52 +229,6 @@ function Recipe({ recipe }: { recipe: RecipeDetail }) {
       )}
     </main>
   );
-}
-
-function IngredientText({ line, factor, system }: { line: IngredientLine; factor: number; system: UnitSystem }) {
-  const amount = presentIngredient(line, factor, system);
-  if (!amount || !line.item) return <span>{line.rawText}</span>;
-  const text = `${amount.amount}${amount.unit ? ` ${amount.unit}` : ''}`;
-  return (
-    <span>
-      {amount.approx ? <Estimated text={text} source={line.rawText} /> : <strong>{text}</strong>} {line.item}
-      {line.note ? <span className="muted">, {line.note}</span> : null}
-    </span>
-  );
-}
-
-// A weight converted from cups/spoons: dotted underline, original line on hover,
-// and on tap (phones have no hover). preventDefault keeps the tap from also
-// ticking the ingredient's checkbox.
-function Estimated({ text, source }: { text: string; source: string }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <button
-        type="button"
-        className="estimate"
-        title={`Estimated from: ${source}`}
-        aria-expanded={open}
-        onClick={(e) => {
-          e.preventDefault();
-          setOpen((o) => !o);
-        }}
-      >
-        {text}
-      </button>
-      {open && <span className="estimate-source muted"> (from {source})</span>}
-    </>
-  );
-}
-
-function groupIngredients(lines: IngredientLine[]) {
-  const groups: { label: string | null; lines: IngredientLine[] }[] = [];
-  for (const line of lines) {
-    const last = groups[groups.length - 1];
-    if (last && last.label === line.groupLabel) last.lines.push(line);
-    else groups.push({ label: line.groupLabel, lines: [line] });
-  }
-  return groups;
 }
 
 function describeSource(r: RecipeDetail): { label: string; url: string | null } {

@@ -204,6 +204,28 @@ export function detectTimer(stepText: string): number | null {
   return total > 0 && total <= 48 * 3600 ? Math.round(total) : null;
 }
 
+/** Every duration in a step, with where it sits in the text ("1 hour 15 minutes" is one span). */
+export function durationSpans(stepText: string): { start: number; end: number; seconds: number }[] {
+  const spans: { start: number; end: number; seconds: number }[] = [];
+  const secondsOf = (m: RegExpMatchArray) => Number(m[2] ?? m[1]) * UNIT_SECONDS(m[3]);
+  let prevWasHours = false;
+  for (const m of stepText.matchAll(DURATION_RE)) {
+    const start = m.index!;
+    const end = start + m[0].length;
+    const prev = spans[spans.length - 1];
+    // "1 hour (and) 15 minutes" joins the previous hour span
+    if (prev && prevWasHours && /^m/i.test(m[3]) && /^\s*(and)?\s*$/i.test(stepText.slice(prev.end, start))) {
+      prev.end = end;
+      prev.seconds += secondsOf(m);
+      prevWasHours = false;
+      continue;
+    }
+    spans.push({ start, end, seconds: secondsOf(m) });
+    prevWasHours = /^h/i.test(m[3]);
+  }
+  return spans.filter((s) => s.seconds > 0 && s.seconds <= 48 * 3600).map((s) => ({ ...s, seconds: Math.round(s.seconds) }));
+}
+
 /** One step per line; "1." / "Step 2:" prefixes and blank lines are dropped. */
 export function parseStepText(text: string): { text: string; timerSeconds: number | null }[] {
   return text
