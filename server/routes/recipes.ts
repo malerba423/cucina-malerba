@@ -1,147 +1,131 @@
 import { Router } from 'express';
-import { and, asc, desc, eq, exists, gte, ilike, or, sql, type SQL } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { db } from '../db/client.js';
-import { cookLogs, people, recipeIngredients, recipes } from '../db/schema.js';
+import { recipes } from '../db/schema.js';
+import { getSearchIndex } from '../searchIndex.js';
+import { fridgeMatches, monthBound, searchDocs, type SearchDoc, type SearchParams } from '../../shared/search.js';
 import {
   ADDED_RANGES,
   SEARCH_FIELDS,
-  SORTS,
   SOURCE_TYPES,
   type AddedRange,
   type BrowseResponse,
+  type FridgeHit,
+  type FridgeResponse,
   type RecipeCard,
   type RecipeDetail,
   type RecipeListResponse,
   type SearchField,
-  type Sort,
   type SourceType,
 } from '../../shared/types.js';
 
 export const recipesRouter = Router();
 
-// Computed per recipe from the cook log.
-const madeCount = sql<number>`(select count(*)::int from ${cookLogs} where ${cookLogs.recipeId} = ${recipes.id})`;
-const avgRating = sql<number | null>`(select round(avg(${cookLogs.rating})::numeric, 1)::float8 from ${cookLogs} where ${cookLogs.recipeId} = ${recipes.id} and ${cookLogs.rating} is not null)`;
-
 function pick<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T {
   return typeof value === 'string' && (allowed as readonly string[]).includes(value) ? (value as T) : fallback;
 }
 
-// User text goes into ILIKE as a bound parameter; escape its wildcards so
-// "50%" means the characters 5, 0, %.
-function likePattern(q: string): string {
-  return `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+const listParam = (v: unknown, max: number, each = 60): string[] =>
+  typeof v === 'string'
+    ? [...new Set(v.split(',').map((s) => s.trim()).filter(Boolean).map((s) => s.slice(0, each)))].slice(0, max)
+    : [];
+
+export function toCard(d: SearchDoc): RecipeCard {
+  return {
+    slug: d.slug,
+    title: d.title,
+    sourceType: d.sourceType,
+    source: d.personName || d.sourceName || null,
+    createdAt: new Date(d.createdAt).toISOString(),
+    totalMinutes: d.totalMinutes,
+    photoUrl: d.photoUrl,
+    madeCount: d.madeCount,
+    avgRating: d.avgRating,
+  };
 }
 
-// GET /api/recipes?q=&by=any|name|ingredient|source&source=&person=&added=&quick=&sort=
+// GET /api/recipes?q=&by=any|name|ingredient|source&source=&person=&added=&from=&to=&tags=&quick=
 recipesRouter.get('/recipes', async (req, res) => {
   const q = typeof req.query.q === 'string' ? req.query.q.trim().slice(0, 100) : '';
-  const by = pick<SearchField>(req.query.by, SEARCH_FIELDS, 'any');
-  const source = pick<SourceType | 'all'>(req.query.source, [...SOURCE_TYPES, 'all'], 'all');
   const added = pick<AddedRange>(req.query.added, ADDED_RANGES, 'any');
-  const sort = pick<Sort>(req.query.sort, SORTS, 'newest');
   const personId = Number(req.query.person);
-  const quick = new Set(typeof req.query.quick === 'string' ? req.query.quick.split(',') : []);
 
-  const where: SQL[] = [];
-
-  if (q) {
-    const pattern = likePattern(q);
-    const byName = ilike(recipes.title, pattern);
-    const bySource = or(ilike(recipes.sourceName, pattern), ilike(people.name, pattern), ilike(recipes.sourceNote, pattern))!;
-    const byIngredient = exists(
-      db
-        .select({ one: sql`1` })
-        .from(recipeIngredients)
-        .where(
-          and(
-            eq(recipeIngredients.recipeId, recipes.id),
-            or(ilike(recipeIngredients.item, pattern), ilike(recipeIngredients.rawText, pattern)),
-          ),
-        ),
-    );
-    where.push(
-      by === 'name' ? byName : by === 'ingredient' ? byIngredient : by === 'source' ? bySource : or(byName, bySource, byIngredient)!,
-    );
-  }
-
-  if (source !== 'all') where.push(eq(recipes.sourceType, source));
-  if (Number.isInteger(personId) && personId > 0) where.push(eq(recipes.sourcePersonId, personId));
-
-  if (added !== 'any') {
+  let addedFrom: number | null = null;
+  let addedTo: number | null = null;
+  if (added === 'month' || added === 'year') {
     const since = new Date();
     since.setMonth(since.getMonth() - (added === 'month' ? 1 : 12));
-    where.push(gte(recipes.createdAt, since));
+    addedFrom = since.getTime();
+  } else if (added === 'custom') {
+    addedFrom = monthBound(req.query.from);
+    addedTo = monthBound(req.query.to, true);
   }
 
-  if (quick.has('under30')) where.push(sql`${recipes.totalMinutes} <= 30`);
-  if (quick.has('never-made')) where.push(sql`${madeCount} = 0`);
-  if (quick.has('rated4')) where.push(sql`${avgRating} >= 4`);
+  const params: SearchParams = {
+    q,
+    by: pick<SearchField>(req.query.by, SEARCH_FIELDS, 'any'),
+    source: pick<SourceType | 'all'>(req.query.source, [...SOURCE_TYPES, 'all'], 'all'),
+    personId: Number.isInteger(personId) && personId > 0 ? personId : null,
+    addedFrom,
+    addedTo,
+    quick: new Set(listParam(req.query.quick, 5)),
+    tags: listParam(req.query.tags, 10).map((t) => t.toLowerCase()),
+  };
 
-  const order =
-    sort === 'oldest'
-      ? [asc(recipes.createdAt)]
-      : sort === 'name'
-        ? [asc(recipes.title)]
-        : sort === 'most-made'
-          ? [desc(madeCount), desc(recipes.createdAt)]
-          : [desc(recipes.createdAt)];
+  const { docs, vocab } = await getSearchIndex();
+  const hits = searchDocs(docs, params, vocab);
 
-  const rows = await db
-    .select({
-      slug: recipes.slug,
-      title: recipes.title,
-      sourceType: recipes.sourceType,
-      sourceName: recipes.sourceName,
-      personName: people.name,
-      createdAt: recipes.createdAt,
-      totalMinutes: recipes.totalMinutes,
-      photoUrl: recipes.photoUrl,
-      madeCount,
-      avgRating,
-    })
-    .from(recipes)
-    .leftJoin(people, eq(recipes.sourcePersonId, people.id))
-    .where(where.length ? and(...where) : undefined)
-    .orderBy(...order)
-    .limit(200);
+  // Newest first. With a search, recipes matching every word come before partial matches.
+  hits.sort((a, b) => a.missed.length - b.missed.length || b.doc.createdAt - a.doc.createdAt);
 
   const body: RecipeListResponse = {
-    total: rows.length,
-    recipes: rows.map(
-      (r): RecipeCard => ({
-        slug: r.slug,
-        title: r.title,
-        sourceType: r.sourceType,
-        source: r.personName ?? r.sourceName,
-        createdAt: r.createdAt.toISOString(),
-        totalMinutes: r.totalMinutes,
-        photoUrl: r.photoUrl,
-        madeCount: r.madeCount,
-        avgRating: r.avgRating,
-      }),
-    ),
+    total: hits.length,
+    fullCount: hits.filter((h) => !h.missed.length).length,
+    recipes: hits.slice(0, 200).map((h) => (h.missed.length ? { ...toCard(h.doc), missed: h.missed } : toCard(h.doc))),
   };
   res.json(body);
 });
 
-// GET /api/browse: counts for the sidebar drawers and the "who it came from" list.
+// GET /api/browse: counts for the sidebar drawers, people and tags.
 recipesRouter.get('/browse', async (_req, res) => {
-  const [sources, peopleRows, [{ total }]] = await Promise.all([
-    db
-      .select({ sourceType: recipes.sourceType, count: sql<number>`count(*)::int` })
-      .from(recipes)
-      .groupBy(recipes.sourceType),
-    db
-      .select({ id: people.id, name: people.name, count: sql<number>`count(${recipes.id})::int` })
-      .from(people)
-      .innerJoin(recipes, eq(recipes.sourcePersonId, people.id))
-      .groupBy(people.id, people.name)
-      .orderBy(desc(sql`count(${recipes.id})`), asc(people.name)),
-    db.select({ total: sql<number>`count(*)::int` }).from(recipes),
-  ]);
+  const { docs } = await getSearchIndex();
+  const sources = new Map<SourceType, number>();
+  const peopleCounts = new Map<number, { id: number; name: string; count: number }>();
+  const tagCounts = new Map<string, number>();
+  for (const d of docs) {
+    sources.set(d.sourceType, (sources.get(d.sourceType) ?? 0) + 1);
+    if (d.personId != null) {
+      const p = peopleCounts.get(d.personId) ?? { id: d.personId, name: d.personName, count: 0 };
+      p.count++;
+      peopleCounts.set(d.personId, p);
+    }
+    for (const t of d.tags) tagCounts.set(t, (tagCounts.get(t) ?? 0) + 1);
+  }
+  const body: BrowseResponse = {
+    total: docs.length,
+    sources: [...sources].map(([sourceType, count]) => ({ sourceType, count })),
+    people: [...peopleCounts.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)),
+    tags: [...tagCounts]
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+      .slice(0, 40),
+  };
+  res.json(body);
+});
 
-  const body: BrowseResponse = { total, sources, people: peopleRows };
+// GET /api/fridge?have=chicken,lemon&staples=salt,pepper
+// Public, and nothing is stored: the lists live in the visitor's browser.
+recipesRouter.get('/fridge', async (req, res) => {
+  const have = listParam(req.query.have, 40, 40);
+  const staples = listParam(req.query.staples, 30, 40);
+  const { docs } = await getSearchIndex();
+  const matches = fridgeMatches(docs, { have, staples }, Infinity);
+  const hit = (m: (typeof matches)[number]): FridgeHit => ({ recipe: toCard(m.doc), matched: m.matched, missing: m.missing });
+  const body: FridgeResponse = {
+    ready: matches.filter((m) => m.missing.length === 0).slice(0, 60).map(hit),
+    close: matches.filter((m) => m.missing.length > 0 && m.missing.length <= 2).slice(0, 60).map(hit),
+    more: matches.filter((m) => m.missing.length > 2).slice(0, 30).map(hit),
+  };
   res.json(body);
 });
 

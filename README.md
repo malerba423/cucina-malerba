@@ -2,7 +2,7 @@
 
 A family recipe box at **[kitchen.jmalerba.dev](https://kitchen.jmalerba.dev)**. Anyone can browse recipes, cook from them and keep a shopping list on their own device. Only invited family can add or change recipes.
 
-> Status: milestone 5. Browsing for everyone; family sign-in by emailed link with three roles; family can add and edit recipes (with photos and exact gram weights) and import them from recipe sites, social posts or pasted text.
+> Status: milestone 6. Browsing and forgiving search for everyone, plus fridge mode (what can I make with what I have); family sign-in with three roles; family can add, edit and import recipes (with photos and exact gram weights).
 
 ## Stack
 

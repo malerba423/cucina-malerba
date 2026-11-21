@@ -181,7 +181,7 @@ export const invites = pgTable(
     role: userRole('role').notNull(),
     invitedByUserId: integer('invited_by_user_id').references(() => users.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-    lastSentAt: timestamp('last_sent_at', { withTimezone: true }).notNull().defaultNow(),
+    lastSentAt: timestamp('last_sent_at', { withTimezone: true }), // null until the owner sends the invite email
   },
   (t) => [uniqueIndex('invites_email_idx').on(t.email)],
 );

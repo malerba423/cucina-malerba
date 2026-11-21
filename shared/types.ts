@@ -15,10 +15,7 @@ export const SOURCE_LABELS: Record<SourceType, string> = {
 export const SEARCH_FIELDS = ['any', 'name', 'ingredient', 'source'] as const;
 export type SearchField = (typeof SEARCH_FIELDS)[number];
 
-export const SORTS = ['newest', 'oldest', 'name', 'most-made'] as const;
-export type Sort = (typeof SORTS)[number];
-
-export const ADDED_RANGES = ['any', 'month', 'year'] as const;
+export const ADDED_RANGES = ['any', 'month', 'year', 'custom'] as const;
 export type AddedRange = (typeof ADDED_RANGES)[number];
 
 export type RecipeCard = {
@@ -31,15 +28,23 @@ export type RecipeCard = {
   photoUrl: string | null;
   madeCount: number;
   avgRating: number | null;
+  /** Search words this recipe didn't match (partial matches only). */
+  missed?: string[];
 };
 
-export type RecipeListResponse = { recipes: RecipeCard[]; total: number };
+/** `recipes` lists full matches first; the first `fullCount` match every word. */
+export type RecipeListResponse = { recipes: RecipeCard[]; total: number; fullCount: number };
 
 export type BrowseResponse = {
   total: number;
   sources: { sourceType: SourceType; count: number }[];
   people: { id: number; name: string; count: number }[];
+  tags: { name: string; count: number }[];
 };
+
+/** Fridge mode: recipes you can make now, with a couple of things more, or that at least use what you have. */
+export type FridgeHit = { recipe: RecipeCard; matched: number; missing: string[] };
+export type FridgeResponse = { ready: FridgeHit[]; close: FridgeHit[]; more: FridgeHit[] };
 
 export type IngredientLine = {
   id: number;

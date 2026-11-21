@@ -19,6 +19,7 @@
   --warn-ink: #4a3a06;
   --badge-bg: #ffffff;
   --badge-ink: #1e2a2f;
+  --placeholder: #8b958f;
 
   --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
   --font-body: 'Inter', system-ui, sans-serif;
@@ -45,6 +46,7 @@
     --warn-ink: #f3e3b0;
     --badge-bg: #151c18;
     --badge-ink: #e8ece6;
+    --placeholder: #6f7d75;
   }
 }
 
@@ -66,6 +68,7 @@
   --warn-ink: #f3e3b0;
   --badge-bg: #151c18;
   --badge-ink: #e8ece6;
+  --placeholder: #6f7d75;
 }
 
 /* ---------- base ---------- */
@@ -235,6 +238,12 @@ select {
   text-decoration: none;
   cursor: pointer;
 }
+.button-small {
+  height: 34px;
+  padding: 0 14px;
+  font-size: 14px;
+  white-space: nowrap;
+}
 .button-primary {
   background: var(--accent);
   border-color: var(--accent);
@@ -333,9 +342,6 @@ select {
   outline: none;
   background: transparent;
   font-size: 16px;
-}
-.search-field input::placeholder {
-  color: var(--ink-muted);
 }
 
 .segmented {
@@ -890,9 +896,6 @@ select {
   background: var(--surface);
   font-size: 16px;
 }
-.field input::placeholder {
-  color: var(--ink-muted);
-}
 
 /* ---------- recipe editor ---------- */
 .add-button {
@@ -983,9 +986,6 @@ select {
 .field select {
   height: 44px;
   padding-block: 0;
-}
-.field textarea::placeholder {
-  color: var(--ink-muted);
 }
 .field input:focus-visible,
 .field textarea:focus-visible,
@@ -1099,8 +1099,11 @@ select {
   .logo {
     font-size: 18px;
   }
-  .topnav-browse {
-    display: none; /* the logo goes home */
+  .topnav {
+    display: none; /* phones: the logo goes home, Fridge is on the home page, Import is in the name menu */
+  }
+  .topbar .logo {
+    flex: 1;
   }
 }
 .importer {
@@ -1173,6 +1176,189 @@ select {
   padding: 4px 10px;
   border-radius: 999px;
   background: var(--surface);
+}
+
+/* ---------- search extras ---------- */
+.fridge-link {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  align-self: flex-start;
+  gap: 8px;
+  margin: -6px 0 4px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.fridge-link .mono {
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.fridge-link:hover {
+  text-decoration: underline;
+}
+.chip-count {
+  margin-left: 2px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  opacity: 0.65;
+}
+.month-range {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+.month-range label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.month-range input {
+  width: 100%;
+  min-width: 0;
+}
+
+.partial-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 28px 0 12px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  font-family: var(--font-display);
+  font-size: 20px;
+}
+.missed {
+  margin: 6px 0 0;
+  color: var(--ink-muted);
+  font-style: italic;
+}
+
+/* ---------- fridge mode ---------- */
+.fridge {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px clamp(16px, 4vw, 36px) 64px;
+}
+.fridge-head h1 {
+  margin: 4px 0 6px;
+  font-family: var(--font-display);
+  font-size: clamp(26px, 5vw, 40px);
+  line-height: 1.1;
+}
+.fridge-entry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: 760px;
+  margin: 20px 0 12px;
+}
+.token-field {
+  flex: 1 1 320px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 48px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  cursor: text;
+}
+.token-field:focus-within {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+.token-field input {
+  flex: 1 1 140px;
+  min-width: 120px;
+  height: 34px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 16px;
+}
+.token {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 4px 4px 10px;
+  border-radius: 999px;
+  background: var(--chip);
+  font-size: 14px;
+}
+.token button {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.token button:hover {
+  background: var(--line);
+  color: var(--ink);
+}
+.fridge-entry-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 48px;
+}
+.staples {
+  max-width: 760px;
+  margin-bottom: 26px;
+}
+.staples p {
+  margin: 4px 0 0 28px;
+}
+.staples-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 10px 0 0 28px;
+}
+.staples-edit .row .field {
+  max-width: 260px;
+}
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+.check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--brand);
+}
+.fridge-results {
+  margin-top: 24px;
+}
+.fridge-results h2 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  margin: 0 0 12px;
+}
+.fridge-hint {
+  margin: -6px 0 12px;
+}
+.fridge-need,
+.fridge-have {
+  margin: 6px 0 0;
+}
+.fridge-need strong {
+  color: var(--accent);
+}
+.fridge-have {
+  color: var(--brand);
+  font-weight: 600;
 }
 
 /* ---------- people (owner) ---------- */
@@ -1313,4 +1499,11 @@ select {
   .checklist {
     break-inside: avoid;
   }
+}
+
+/* Placeholders: lighter and italic, so example text never reads as something already filled in. */
+::placeholder {
+  color: var(--placeholder);
+  font-style: italic;
+  opacity: 1;
 }

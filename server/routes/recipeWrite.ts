@@ -10,6 +10,7 @@ import { newToken } from '../auth/crypto.js';
 import { createRateLimiter } from '../auth/rateLimit.js';
 import { deleteByUrl, publicPrefix, putObject } from '../storage.js';
 import { sniffImage } from '../imageSniff.js';
+import { invalidateSearchIndex } from '../searchIndex.js';
 
 // Adding, editing and deleting recipes, plus photo uploads. Signed-in family only.
 export const recipeWriteRouter = Router();
@@ -108,6 +109,7 @@ recipeWriteRouter.post('/recipes', requireRole('contributor'), async (req, res) 
     await writeChildren(tx, row.id, v);
     return slug;
   });
+  invalidateSearchIndex();
   res.status(201).json({ slug });
 });
 
@@ -141,6 +143,7 @@ recipeWriteRouter.put('/recipes/:slug', requireRole('contributor'), async (req, 
     await writeChildren(tx, existing.id, v);
   });
   if (existing.photoUrl && existing.photoUrl !== v.photoUrl) await deleteByUrl(existing.photoUrl);
+  invalidateSearchIndex();
   res.json({ slug: String(req.params.slug) });
 });
 
@@ -157,6 +160,7 @@ recipeWriteRouter.delete('/recipes/:slug', requireRole('contributor'), async (re
   }
   await db.delete(recipes).where(eq(recipes.id, existing.id));
   await deleteByUrl(existing.photoUrl);
+  invalidateSearchIndex();
   res.json({ ok: true });
 });
 

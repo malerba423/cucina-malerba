@@ -62,13 +62,15 @@ adminRouter.get('/admin/people', async (_req, res) => {
       name: i.name,
       role: i.role,
       createdAt: i.createdAt.toISOString(),
-      lastSentAt: i.lastSentAt.toISOString(),
+      lastSentAt: i.lastSentAt?.toISOString() ?? null,
     })),
   };
   res.json(body);
 });
 
 // POST /api/admin/invites { email, name, role }
+// Adds someone who may sign in. No email goes out here: the owner sends the
+// invite from their row when ready (they can also just go to /signin).
 adminRouter.post('/admin/invites', async (req, res) => {
   const email = typeof req.body?.email === 'string' ? normalizeEmail(req.body.email) : '';
   const name = typeof req.body?.name === 'string' ? req.body.name.trim().slice(0, 60) : '';
@@ -82,22 +84,16 @@ adminRouter.post('/admin/invites', async (req, res) => {
 
   const [invite] = await db
     .insert(invites)
-    .values({ email, name, role, invitedByUserId: res.locals.user!.id })
-    .onConflictDoUpdate({ target: invites.email, set: { name, role, lastSentAt: new Date() } })
-    .returning();
+    .values({ email, name, role, invitedByUserId: res.locals.user!.id, lastSentAt: null })
+    .onConflictDoUpdate({ target: invites.email, set: { name, role } })
+    .returning({ id: invites.id });
 
-  try {
-    await sendInvite(invite, res.locals.user!.name);
-  } catch (err) {
-    console.error('invite email failed', err);
-    return bad(res, 502, 'The invite was saved, but the email could not be sent. Try "Resend".');
-  }
-  res.status(201).json({ ok: true });
+  res.status(201).json({ ok: true, id: invite.id });
 });
 
-// POST /api/admin/invites/:id/resend
-adminRouter.post('/admin/invites/:id/resend', async (req, res) => {
-  const id = idParam(req.params.id);
+// POST /api/admin/invites/:id/send: emails (or re-emails) the invite.
+adminRouter.post(['/admin/invites/:id/send', '/admin/invites/:id/resend'], async (req, res) => {
+  const id = idParam(String(req.params.id));
   const [invite] = id ? await db.select().from(invites).where(eq(invites.id, id)).limit(1) : [];
   if (!invite) return bad(res, 404, 'Invite not found');
   try {

@@ -1,8 +1,7 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import {
   ADDED_RANGES,
   SEARCH_FIELDS,
-  SORTS,
   SOURCE_LABELS,
   SOURCE_TYPES,
   type AddedRange,
@@ -10,7 +9,6 @@ import {
   type RecipeCard,
   type RecipeListResponse,
   type SearchField,
-  type Sort,
   type SourceType,
 } from '../../../shared/types';
 import { formatMinutes } from '../../../shared/units';
@@ -19,8 +17,8 @@ import { initials, KIND_LABEL, shortDate, stars, tintFor } from '../format';
 import { Link, useRouter } from '../router';
 
 const FIELD_LABELS: Record<SearchField, string> = { any: 'Anything', name: 'Name', ingredient: 'Ingredient', source: 'Source' };
-const SORT_LABELS: Record<Sort, string> = { newest: 'Newest added', oldest: 'Oldest added', name: 'Name A–Z', 'most-made': 'Most made' };
-const ADDED_LABELS: Record<AddedRange, string> = { any: 'Any time', month: 'Past month', year: 'Past year' };
+const ADDED_LABELS: Record<AddedRange, string> = { any: 'Any time', month: 'Past month', year: 'Past year', custom: 'Pick months…' };
+const TAGS_SHOWN = 12;
 const QUICK = [
   { key: 'under30', label: 'Under 30 min' },
   { key: 'never-made', label: 'Never made' },
@@ -39,19 +37,33 @@ export function HomePage() {
   const by = oneOf<SearchField>(search.get('by'), SEARCH_FIELDS, 'any');
   const source = oneOf<SourceType | 'all'>(search.get('source'), [...SOURCE_TYPES, 'all'], 'all');
   const added = oneOf<AddedRange>(search.get('added'), ADDED_RANGES, 'any');
-  const sort = oneOf<Sort>(search.get('sort'), SORTS, 'newest');
+  const urlQuery = search.get('q') ?? '';
   const person = search.get('person') ?? '';
   const quick = new Set((search.get('quick') ?? '').split(',').filter(Boolean));
-  const urlQuery = search.get('q') ?? '';
+  const tags = (search.get('tags') ?? '').split(',').filter(Boolean);
+  const from = search.get('from') ?? '';
+  const to = search.get('to') ?? '';
+  const [allTags, setAllTags] = useState(false);
 
   const [text, setText] = useState(urlQuery);
   const debounced = useDebounced(text.trim(), 250);
 
+  // Back/forward changes the URL under us: bring the box in line with it.
+  useEffect(() => {
+    if (urlQuery !== text.trim()) setText(urlQuery);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlQuery]);
+
   const update = (changes: Record<string, string | null>) => {
     const next = new URLSearchParams(search);
     for (const [k, v] of Object.entries(changes)) {
-      if (v == null || v === '' || v === 'all' || v === 'any' || (k === 'sort' && v === 'newest')) next.delete(k);
+      if (v == null || v === '' || v === 'all' || v === 'any') next.delete(k);
       else next.set(k, v);
+    }
+    next.delete('sort'); // old links: there's one order now (newest first)
+    if (next.get('added') !== 'custom') {
+      next.delete('from');
+      next.delete('to');
     }
     const qs = next.toString();
     navigate(qs ? `/?${qs}` : '/', { replace: true });
@@ -79,7 +91,12 @@ export function HomePage() {
     update({ q: text.trim() });
   };
 
-  const filtered = urlQuery || source !== 'all' || person || added !== 'any' || quick.size > 0;
+  const toggleTag = (tag: string) => {
+    const next = tags.includes(tag) ? tags.filter((t) => t !== tag) : [...tags, tag];
+    update({ tags: next.join(',') });
+  };
+
+  const filtered = urlQuery || source !== 'all' || person || added !== 'any' || quick.size > 0 || tags.length > 0;
   const browseData = browse.status === 'ok' ? browse.data : undefined;
   const listData = 'data' in list ? list.data : undefined;
 
@@ -87,6 +104,9 @@ export function HomePage() {
     <>
       <section className="hero">
         <h1>What are we cooking?</h1>
+        <Link to="/fridge" className="fridge-link">
+          <span className="mono small">FRIDGE MODE</span> What can I make with what I have? →
+        </Link>
         <form className="search" role="search" onSubmit={onSubmit}>
           <label className="search-field">
             <SearchIcon />
@@ -96,7 +116,7 @@ export function HomePage() {
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder={
-                by === 'ingredient' ? 'An ingredient, like "lemon"' : by === 'source' ? 'A person, site, @handle or book' : 'Search name, ingredient, person, website…'
+                by === 'ingredient' ? 'Ingredients, like "chicken, lemon"' : by === 'source' ? 'A person, site, @handle or book' : 'Search name, ingredient, person, website…'
               }
             />
           </label>
@@ -169,6 +189,27 @@ export function HomePage() {
             </div>
           </section>
 
+          {browseData && browseData.tags.length > 0 && (
+            <section>
+              <h2 className="label">Tags</h2>
+              <div className="chips">
+                {[
+                  // chosen tags stay visible even when they're past the first few
+                  ...browseData.tags.filter((t, i) => allTags || i < TAGS_SHOWN || tags.includes(t.name)),
+                ].map((t) => (
+                  <button key={t.name} type="button" className="chip" aria-pressed={tags.includes(t.name)} onClick={() => toggleTag(t.name)}>
+                    {t.name} <span className="chip-count">{t.count}</span>
+                  </button>
+                ))}
+              </div>
+              {browseData.tags.length > TAGS_SHOWN && (
+                <button type="button" className="text-button small" onClick={() => setAllTags((v) => !v)}>
+                  {allTags ? 'Fewer tags' : `All ${browseData.tags.length} tags`}
+                </button>
+              )}
+            </section>
+          )}
+
           <section>
             <label className="label" htmlFor="added">
               Date added
@@ -180,6 +221,18 @@ export function HomePage() {
                 </option>
               ))}
             </select>
+            {added === 'custom' && (
+              <div className="month-range">
+                <label>
+                  <span className="small muted">From</span>
+                  <input type="month" className="select" value={from} max={to || undefined} onChange={(e) => update({ from: e.target.value })} />
+                </label>
+                <label>
+                  <span className="small muted">Through</span>
+                  <input type="month" className="select" value={to} min={from || undefined} onChange={(e) => update({ to: e.target.value })} />
+                </label>
+              </div>
+            )}
           </section>
         </aside>
 
@@ -188,18 +241,12 @@ export function HomePage() {
             <h2>{filtered ? 'Matching recipes' : 'Recently added'}</h2>
             <div className="results-tools">
               <span className="mono muted" aria-live="polite">
-                {listData ? `${listData.total} ${listData.total === 1 ? 'RECIPE' : 'RECIPES'}` : ''}
+                {listData
+                  ? `${listData.fullCount} ${listData.fullCount === 1 ? 'RECIPE' : 'RECIPES'}${
+                      listData.total > listData.fullCount ? ` + ${listData.total - listData.fullCount} PARTIAL` : ''
+                    }`
+                  : ''}
               </span>
-              <label className="visually-hidden" htmlFor="sort">
-                Sort
-              </label>
-              <select id="sort" className="select" value={sort} onChange={(e) => update({ sort: e.target.value })}>
-                {SORTS.map((s) => (
-                  <option key={s} value={s}>
-                    {SORT_LABELS[s]}
-                  </option>
-                ))}
-              </select>
             </div>
           </div>
 
@@ -220,16 +267,39 @@ export function HomePage() {
             </div>
           )}
 
-          <div className="card-grid">
-            {listData?.recipes.map((r) => <RecipeCardView key={r.slug} recipe={r} />)}
-          </div>
+          {listData && listData.fullCount === 0 && listData.recipes.length > 0 && (
+            <p className="notice">No recipe has all of those words. Here are the closest.</p>
+          )}
+          {listData && listData.fullCount > 0 && (
+            <div className="card-grid">
+              {listData.recipes.slice(0, listData.fullCount).map((r) => (
+                <RecipeCardView key={r.slug} recipe={r} />
+              ))}
+            </div>
+          )}
+          {listData && listData.recipes.length > listData.fullCount && (
+            <>
+              {listData.fullCount > 0 && (
+                <h3 className="partial-head">
+                  Partial matches <span className="small muted">missing a word or two</span>
+                </h3>
+              )}
+              <div className="card-grid">
+                {listData.recipes.slice(listData.fullCount).map((r) => (
+                  <RecipeCardView key={r.slug} recipe={r}>
+                    {r.missed && <p className="small missed">No match for: {r.missed.join(', ')}</p>}
+                  </RecipeCardView>
+                ))}
+              </div>
+            </>
+          )}
         </main>
       </div>
     </>
   );
 }
 
-function RecipeCardView({ recipe }: { recipe: RecipeCard }) {
+export function RecipeCardView({ recipe, children }: { recipe: RecipeCard; children?: ReactNode }) {
   const made = recipe.madeCount ? `MADE ${recipe.madeCount}×` : 'NOT MADE YET';
   return (
     <article className="card">
@@ -252,6 +322,7 @@ function RecipeCardView({ recipe }: { recipe: RecipeCard }) {
             ADDED {shortDate(recipe.createdAt)} · {made}
             {recipe.totalMinutes ? ` · ${formatMinutes(recipe.totalMinutes).toUpperCase()}` : ''}
           </p>
+          {children}
         </div>
       </Link>
     </article>

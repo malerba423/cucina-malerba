@@ -13,6 +13,7 @@ import { VerifyPage } from './pages/VerifyPage';
 import { PeoplePage } from './pages/PeoplePage';
 import { EditRecipePage } from './pages/EditRecipePage';
 import { ImportPage } from './pages/ImportPage';
+import { FridgePage } from './pages/FridgePage';
 
 export function App() {
   return (
@@ -33,6 +34,7 @@ function Shell() {
   if (pathname === '/') page = <HomePage />;
   else if (pathname === '/recipes/new') page = <EditRecipePage />;
   else if (pathname === '/import' || pathname === '/import/') page = <ImportPage />;
+  else if (pathname === '/fridge' || pathname === '/fridge/') page = <FridgePage />;
   else if (editMatch) page = <EditRecipePage slug={decodeURIComponent(editMatch[1])} />;
   else if (recipeMatch) page = <RecipePage slug={decodeURIComponent(recipeMatch[1])} />;
   else if (pathname === '/signin') page = <SignInPage />;
@@ -60,7 +62,7 @@ function Header() {
   const { theme, toggle } = useTheme();
   const { user } = useAuth();
   const { pathname } = useRouter();
-  const importing = pathname.startsWith('/import');
+  const section = pathname.startsWith('/import') ? 'import' : pathname.startsWith('/fridge') ? 'fridge' : 'browse';
   return (
     <header className="topbar">
       <Link to="/" className="logo">
@@ -68,11 +70,14 @@ function Header() {
         <span className="logo-dot">.</span>
       </Link>
       <nav className="topnav" aria-label="Main">
-        <Link to="/" className={`topnav-link topnav-browse${importing ? '' : ' is-active'}`}>
+        <Link to="/" className={`topnav-link${section === 'browse' ? ' is-active' : ''}`}>
           Browse
         </Link>
+        <Link to="/fridge" className={`topnav-link${section === 'fridge' ? ' is-active' : ''}`}>
+          Fridge
+        </Link>
         {user && (
-          <Link to="/import" className={`topnav-link${importing ? ' is-active' : ''}`}>
+          <Link to="/import" className={`topnav-link${section === 'import' ? ' is-active' : ''}`}>
             Import
           </Link>
         )}
@@ -141,6 +146,16 @@ function AccountArea() {
             <br />
             {ROLE_LABELS[user.role]}
           </p>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              navigate('/import');
+            }}
+          >
+            Import a recipe
+          </button>
           {user.role === 'owner' && (
             <button
               type="button"

@@ -26,7 +26,8 @@ export function PeoplePage() {
           <h1>Who can add recipes</h1>
           <p className="muted">
             Anyone can browse and cook. Only the people below can add or change recipes. They sign in with a link emailed to
-            them, so there are no passwords.
+            them, so there are no passwords. Once you add someone they can sign in at <strong>/signin</strong> with that email;
+            sending the invite just tells them it's ready.
           </p>
         </div>
 
@@ -90,13 +91,12 @@ function InviteForm({ onInvited }: { onInvited: () => void }) {
     const result = await send('/api/admin/invites', 'POST', { email, name, role });
     setBusy(false);
     if (result.ok) {
-      setMessage({ kind: 'ok', text: `Invite sent to ${email}.` });
+      setMessage({ kind: 'ok', text: `Added ${name}. Send the invite from their row when you're ready.` });
       setEmail('');
       setName('');
       onInvited();
     } else {
       setMessage({ kind: 'error', text: result.error });
-      if (result.status === 502) onInvited(); // saved but not emailed
     }
   };
 
@@ -121,7 +121,7 @@ function InviteForm({ onInvited }: { onInvited: () => void }) {
         </select>
       </label>
       <button type="submit" className="button button-primary" disabled={busy}>
-        {busy ? 'Sending…' : 'Send invite'}
+        {busy ? 'Adding…' : 'Add'}
       </button>
       {message && (
         <p className={`notice small full ${message.kind === 'error' ? 'notice-warn' : ''}`} role={message.kind === 'error' ? 'alert' : 'status'}>
@@ -199,14 +199,18 @@ function PersonRow({ person, onChanged }: { person: PeopleAdminResponse['users']
 
 function InviteRow({ invite, onChanged }: { invite: PeopleAdminResponse['invites'][number]; onChanged: () => void }) {
   const [note, setNote] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const sent = invite.lastSentAt != null;
 
-  const resend = async () => {
-    const r = await send(`/api/admin/invites/${invite.id}/resend`, 'POST');
-    setNote(r.ok ? 'Sent again.' : r.error);
+  const sendInvite = async () => {
+    setSending(true);
+    const r = await send(`/api/admin/invites/${invite.id}/send`, 'POST');
+    setSending(false);
+    setNote(r.ok ? `Invite emailed to ${invite.email}.` : r.error);
     if (r.ok) onChanged();
   };
-  const cancel = async () => {
-    if (!window.confirm(`Cancel the invite for ${invite.email}?`)) return;
+  const remove = async () => {
+    if (!window.confirm(`Remove ${invite.name} (${invite.email})? They won't be able to sign in.`)) return;
     await send(`/api/admin/invites/${invite.id}`, 'DELETE');
     onChanged();
   };
@@ -219,16 +223,18 @@ function InviteRow({ invite, onChanged }: { invite: PeopleAdminResponse['invites
       <div className="person-info">
         <strong>{invite.name}</strong>
         <span className="small muted">
-          {invite.email} · invite sent {longDate(invite.lastSentAt)}
+          {invite.email} · {sent ? `invite sent ${longDate(invite.lastSentAt!)}` : 'not invited yet'} · hasn't signed in
         </span>
         {note && <span className="small muted">{note}</span>}
       </div>
-      <span className="pill mono">PENDING · {ROLE_LABELS[invite.role].toUpperCase()}</span>
-      <button type="button" className="text-button" onClick={resend}>
-        Resend
+      <span className="pill mono">
+        {sent ? 'INVITED' : 'ADDED'} · {ROLE_LABELS[invite.role].toUpperCase()}
+      </span>
+      <button type="button" className={sent ? 'text-button' : 'button button-small'} onClick={sendInvite} disabled={sending}>
+        {sending ? 'Sending…' : sent ? 'Send again' : 'Send invite'}
       </button>
-      <button type="button" className="text-button" onClick={cancel}>
-        Cancel
+      <button type="button" className="text-button" onClick={remove}>
+        Remove
       </button>
     </li>
   );

@@ -29,6 +29,13 @@
       "when": 1795278818541,
       "tag": "0003_closed_micromacro",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795287820266,
+      "tag": "0004_thick_photon",
+      "breakpoints": true
     }
   ]
 }
