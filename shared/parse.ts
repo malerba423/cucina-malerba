@@ -58,6 +58,10 @@ function normalizeText(s: string): string {
     .replace(/(\d)\s*([½⅓⅔¼¾⅛⅜⅝⅞⅕⅖⅗⅘⅙⅚])/g, (_, d: string, g: string) => `${d} ${GLYPHS[g]}`)
     .replace(/[½⅓⅔¼¾⅛⅜⅝⅞⅕⅖⅗⅘⅙⅚]/g, (g) => GLYPHS[g])
     .replace(/⁄/g, '/') // fraction slash
+    // "1-3/4" is a mixed number (1¾), not a range: a whole number joined to a fraction smaller than 1.
+    .replace(/(?<![\d/.])(\d+)\s?-\s?(\d+)\/(\d+)(?!\d)/g, (whole, w: string, n: string, d: string) =>
+      Number(n) < Number(d) ? `${w} ${n}/${d}` : whole,
+    )
     .replace(/\s+/g, ' ')
     .trim();
 }

@@ -91,3 +91,18 @@ describe('slugify', () => {
     expect(slugify('!!!')).toBe('recipe');
   });
 });
+
+describe('mixed numbers written with a hyphen', () => {
+  it('reads "1-3/4cups" as 1¾ cups, not a range', () => {
+    const l = parseIngredientLine('1-3/4cups all-purpose flour');
+    expect([l.quantity, l.quantityMax, l.unit, l.item]).toEqual([1.75, null, 'cup', 'all-purpose flour']);
+    expect(parseIngredientLine('2-½ tbsp sugar').quantity).toBe(2.5);
+  });
+  it('keeps real ranges', () => {
+    const a = parseIngredientLine('1-2 cups stock');
+    expect([a.quantity, a.quantityMax]).toEqual([1, 2]);
+    const b = parseIngredientLine('1/2-3/4 cup milk');
+    expect([b.quantity, b.quantityMax]).toEqual([0.5, 0.75]);
+  });
+});
+
