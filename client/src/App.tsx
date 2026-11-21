@@ -12,6 +12,7 @@ import { SignInPage } from './pages/SignInPage';
 import { VerifyPage } from './pages/VerifyPage';
 import { PeoplePage } from './pages/PeoplePage';
 import { EditRecipePage } from './pages/EditRecipePage';
+import { ImportPage } from './pages/ImportPage';
 
 export function App() {
   return (
@@ -31,6 +32,7 @@ function Shell() {
   let page;
   if (pathname === '/') page = <HomePage />;
   else if (pathname === '/recipes/new') page = <EditRecipePage />;
+  else if (pathname === '/import' || pathname === '/import/') page = <ImportPage />;
   else if (editMatch) page = <EditRecipePage slug={decodeURIComponent(editMatch[1])} />;
   else if (recipeMatch) page = <RecipePage slug={decodeURIComponent(recipeMatch[1])} />;
   else if (pathname === '/signin') page = <SignInPage />;
@@ -56,6 +58,9 @@ function Shell() {
 
 function Header() {
   const { theme, toggle } = useTheme();
+  const { user } = useAuth();
+  const { pathname } = useRouter();
+  const importing = pathname.startsWith('/import');
   return (
     <header className="topbar">
       <Link to="/" className="logo">
@@ -63,9 +68,14 @@ function Header() {
         <span className="logo-dot">.</span>
       </Link>
       <nav className="topnav" aria-label="Main">
-        <Link to="/" className="topnav-link is-active">
+        <Link to="/" className={`topnav-link topnav-browse${importing ? '' : ' is-active'}`}>
           Browse
         </Link>
+        {user && (
+          <Link to="/import" className={`topnav-link${importing ? ' is-active' : ''}`}>
+            Import
+          </Link>
+        )}
       </nav>
       <AccountArea />
       <button

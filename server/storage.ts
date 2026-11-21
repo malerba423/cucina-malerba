@@ -18,9 +18,17 @@ let cachedToken: { value: string; expiresAt: number } | null = null;
 
 async function accessToken(): Promise<string> {
   if (cachedToken && cachedToken.expiresAt > Date.now() + 60_000) return cachedToken.value;
-  const res = await fetch('http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token', {
-    headers: { 'Metadata-Flavor': 'Google' },
-  });
+  let res: Response;
+  try {
+    res = await fetch('http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token', {
+      headers: { 'Metadata-Flavor': 'Google' },
+    });
+  } catch {
+    throw new Error(
+      "GCS_BUCKET is set, but there's no Google metadata server here to sign in to Cloud Storage. " +
+        'Running locally? Leave GCS_BUCKET empty in .env so photos are saved in .uploads/.',
+    );
+  }
   if (!res.ok) throw new Error(`Couldn't get a Google access token (${res.status})`);
   const body = (await res.json()) as { access_token: string; expires_in: number };
   cachedToken = { value: body.access_token, expiresAt: Date.now() + body.expires_in * 1000 };

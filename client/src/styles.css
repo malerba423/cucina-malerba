@@ -1091,6 +1091,90 @@ select {
   margin-top: 6px;
 }
 
+/* ---------- import ---------- */
+@media (max-width: 520px) {
+  .topbar {
+    gap: 10px;
+  }
+  .logo {
+    font-size: 18px;
+  }
+  .topnav-browse {
+    display: none; /* the logo goes home */
+  }
+}
+.importer {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 28px clamp(16px, 4vw, 36px) 64px;
+}
+.importer h1 {
+  margin: 4px 0 6px;
+  font-family: var(--font-display);
+  font-size: clamp(26px, 5vw, 38px);
+  line-height: 1.1;
+}
+.import-tabs {
+  margin: 22px 0 12px;
+}
+.import-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.import-card .field {
+  max-width: none;
+}
+.import-card .button-primary {
+  min-width: 140px;
+}
+@media (max-width: 520px) {
+  .import-card .button-primary {
+    width: 100%;
+  }
+}
+.importer .notice {
+  margin-top: 14px;
+}
+.import-alt {
+  margin-top: 22px;
+}
+.import-hint {
+  margin: -10px 0 18px;
+}
+.import-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+.import-banner p {
+  margin: 0;
+}
+.import-summary {
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: var(--chip);
+}
+.import-summary .mono {
+  margin-right: 6px;
+  letter-spacing: 0.04em;
+}
+.import-summary.little {
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+}
+.photo-busy {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--surface);
+}
+
 /* ---------- people (owner) ---------- */
 .people-page {
   max-width: 1120px;

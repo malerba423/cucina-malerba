@@ -9,6 +9,7 @@ import { recipesRouter } from './routes/recipes.js';
 import { authRouter } from './routes/auth.js';
 import { adminRouter } from './routes/admin.js';
 import { recipeWriteRouter } from './routes/recipeWrite.js';
+import { importRouter } from './routes/import.js';
 import { LOCAL_MEDIA_PATH, LOCAL_UPLOAD_DIR } from './storage.js';
 import { loadUser } from './auth/session.js';
 import { originCheck } from './middleware/originCheck.js';
@@ -33,14 +34,21 @@ app.use('/api', healthRouter);
 app.use('/api', authRouter);
 app.use('/api', recipesRouter);
 app.use('/api', recipeWriteRouter);
+app.use('/api', importRouter);
 app.use('/api', adminRouter);
 app.use('/api', (_req, res) => {
   res.status(404).json({ error: 'Not found' });
 });
 // Errors thrown in API handlers (Express 5 catches async ones) → JSON, not an HTML page.
 app.use('/api', (err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  // Request errors (body too large, bad JSON) carry their own 4xx status: pass those on.
+  const status = (err as { status?: number })?.status;
+  if (typeof status === 'number' && status >= 400 && status < 500) {
+    res.status(status).json({ error: status === 413 ? 'That upload is too large' : 'That request couldn’t be read' });
+    return;
+  }
   console.error(err);
-  res.status(500).json({ error: 'Something went wrong' });
+  res.status(500).json({ error: 'Something went wrong on the server' });
 });
 
 // Local photo uploads (only when no Cloud Storage bucket is configured).

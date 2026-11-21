@@ -4,7 +4,7 @@
 
 export const MAX_PHOTO_PX = 1600;
 
-export async function resizePhoto(file: File, maxSize = MAX_PHOTO_PX, quality = 0.82): Promise<Blob> {
+export async function resizePhoto(file: Blob, maxSize = MAX_PHOTO_PX, quality = 0.82): Promise<Blob> {
   let bitmap: ImageBitmap;
   try {
     bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
@@ -36,4 +36,14 @@ export async function uploadPhoto(blob: Blob): Promise<string> {
   const body = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
   if (!res.ok || !body.url) throw new Error(body.error ?? `Upload failed (${res.status})`);
   return body.url;
+}
+
+/** Copies a photo from another site (through our server, since other sites block cross-site reads), resized like any upload. */
+export async function importPhoto(remoteUrl: string): Promise<string> {
+  const res = await fetch(`/api/import/image?url=${encodeURIComponent(remoteUrl)}`);
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(body.error ?? "Couldn't get the page's photo");
+  }
+  return uploadPhoto(await resizePhoto(await res.blob()));
 }
