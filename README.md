@@ -14,7 +14,7 @@ A family recipe box at **[kitchen.jmalerba.dev](https://kitchen.jmalerba.dev)**.
 
 ## Run it locally
 
-Requires Node 22+ and Docker.
+Requires Node 24+ and Docker. With nvm, run `nvm use` (reads `.nvmrc`).
 
 ```sh
 npm install

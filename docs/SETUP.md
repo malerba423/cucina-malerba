@@ -25,7 +25,7 @@ Placeholders used below — replace them everywhere:
 
 ## 0. Before you start
 
-- Install: Node 22+, Docker, the [gcloud CLI](https://cloud.google.com/sdk/docs/install), and the Firebase CLI (`npm install -g firebase-tools`).
+- Install: Node 24+, Docker, the [gcloud CLI](https://cloud.google.com/sdk/docs/install), and the Firebase CLI (`npm install -g firebase-tools`).
 - Create a **public** GitHub repo named `cucina-malerba` and push this code to `main` **after** step 1 below (the first push triggers a deploy, which will fail until steps 2–4 are done; that's fine, you can re-run it).
 - In the repo's **Settings → Code security**, check that **Secret scanning** and **Push protection** are on.
 
