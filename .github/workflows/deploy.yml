@@ -70,6 +70,6 @@ jobs:
             --min-instances 0 \
             --max-instances 2 \
             --memory 512Mi \
-            --set-secrets "DATABASE_URL=DATABASE_URL:latest,RESEND_API_KEY=RESEND_API_KEY:latest" \
+            --set-secrets "DATABASE_URL=DATABASE_URL:latest,RESEND_API_KEY=RESEND_API_KEY:latest,ANTHROPIC_API_KEY=ANTHROPIC_API_KEY:latest" \
             --set-env-vars "OWNER_EMAIL=${{ vars.OWNER_EMAIL }},GCS_BUCKET=${{ vars.GCS_BUCKET }}" \
             --quiet

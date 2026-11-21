@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } 
 import { canEditRecipe } from '../../../shared/auth';
 import { ingredientsToText, parseIngredientText, parseStepText } from '../../../shared/parse';
 import type { RecipeInput } from '../../../shared/recipeInput';
+import type { TidyResult } from '../../../shared/tidy';
 import { SOURCE_TYPES, type RecipeDetail, type SourceType } from '../../../shared/types';
 import { formatQuantity, formatTimer } from '../../../shared/units';
 import { send, useApi } from '../api';
@@ -184,6 +185,13 @@ export function RecipeForm({ initial, slug, defaultPerson, importedPhoto = null,
   const [formError, setFormError] = useState<string | null>(null);
   const [photoState, setPhotoState] = useState<{ busy: boolean; error: string | null }>({ busy: false, error: null });
   const names = useApi<{ names: string[] }>('/api/people/names');
+  const tidyStatus = useApi<{ available: boolean }>('/api/tidy/status');
+  const [tidy, setTidy] = useState<{ busy: boolean; message: string | null; notes: string | null; undo: FormState | null }>({
+    busy: false,
+    message: null,
+    notes: null,
+    undo: null,
+  });
   const fileInput = useRef<HTMLInputElement>(null);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
@@ -214,6 +222,44 @@ export function RecipeForm({ initial, slug, defaultPerson, importedPhoto = null,
     } finally {
       if (fileInput.current) fileInput.current.value = '';
     }
+  };
+
+  // "Tidy this up": AI rewrites the messy parts; the result fills the form and can be undone.
+  const runTidy = async () => {
+    setTidy({ busy: true, message: null, notes: null, undo: null });
+    const r = await send<TidyResult>('/api/tidy', 'POST', {
+      title: f.title,
+      description: f.description,
+      servings: f.servings ? `${f.servings} ${f.yieldLabel}`.trim() : '',
+      ingredients: f.ingredients,
+      steps: f.steps,
+    });
+    if (!r.ok) {
+      setTidy({ busy: false, message: r.error, notes: null, undo: null });
+      return;
+    }
+    const t = r.data;
+    const before = f;
+    const ingredients = t.ingredients.length ? t.ingredients.join('\n') : f.ingredients;
+    const kept = new Set(ingredients.split('\n').map((l) => l.trim()));
+    const n = (v: number | null, fallback: string) => (v == null ? fallback : String(v));
+    setF({
+      ...f,
+      title: t.title || f.title,
+      description: t.description || f.description,
+      servings: n(t.servings, f.servings),
+      yieldLabel: t.servings != null && t.yieldLabel ? t.yieldLabel : f.yieldLabel,
+      prepMinutes: n(t.prepMinutes, f.prepMinutes),
+      cookMinutes: n(t.cookMinutes, f.cookMinutes),
+      totalMinutes: n(t.totalMinutes, f.totalMinutes),
+      ingredients,
+      steps: t.steps.length ? t.steps.join('\n') : f.steps,
+      tags: [...new Set([...f.tags.split(',').map((x) => x.trim()).filter(Boolean), ...t.tags])].join(', '),
+      // Exact weights stay with lines that are still there word for word.
+      weights: Object.fromEntries(Object.entries(f.weights).filter(([line]) => kept.has(line))),
+    });
+    setDirty(true);
+    setTidy({ busy: false, message: 'Tidied. Check the preview tables, then save.', notes: t.notes || null, undo: before });
   };
 
   const fillSiteName = () => {
@@ -358,6 +404,39 @@ export function RecipeForm({ initial, slug, defaultPerson, importedPhoto = null,
             </fieldset>
 
             <SourceFields f={f} set={set} errors={errors} personNames={personNames} defaultPerson={defaultPerson} onUrlBlur={fillSiteName} />
+
+            {tidyStatus.status === 'ok' && tidyStatus.data.available && (
+              <div className="tidy-bar">
+                <button
+                  type="button"
+                  className="button button-small"
+                  onClick={runTidy}
+                  disabled={tidy.busy || (!f.ingredients.trim() && !f.steps.trim())}
+                >
+                  {tidy.busy ? 'Tidying…' : '✨ Tidy this up'}
+                </button>
+                {tidy.message ? (
+                  <span className="small" role="status">
+                    {tidy.message}{' '}
+                    {tidy.undo && (
+                      <button
+                        type="button"
+                        className="text-button"
+                        onClick={() => {
+                          setF(tidy.undo!);
+                          setTidy({ busy: false, message: 'Back to how it was.', notes: null, undo: null });
+                        }}
+                      >
+                        Undo
+                      </button>
+                    )}
+                  </span>
+                ) : (
+                  <span className="small muted">Uses AI to sort out messy ingredients and steps. Nothing is saved until you press Save.</span>
+                )}
+                {tidy.notes && <p className="notice notice-warn small tidy-notes">To check: {tidy.notes}</p>}
+              </div>
+            )}
 
             <Field label="Ingredients" hint='One per line. A line ending in ":" starts a group, e.g. "For the crust:".' error={errors.ingredients}>
               <textarea

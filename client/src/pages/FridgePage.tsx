@@ -4,6 +4,8 @@ import type { FridgeHit, FridgeResponse } from '../../../shared/types';
 import { useApi } from '../api';
 import { Link } from '../router';
 import { RecipeCardView } from './HomePage';
+import { entryFromText } from '../../../shared/shopping';
+import { shopping, useShoppingEntries } from '../shoppingList';
 
 // What you have lives in this browser only (like the shopping list), so
 // fridge mode works for everyone and nothing is stored on the server.
@@ -198,6 +200,8 @@ export function FridgePage() {
 const SHOW_MISSING = 4;
 
 function Results({ title, hint, hits }: { title: string; hint?: string; hits: FridgeHit[] }) {
+  const entries = useShoppingEntries();
+  const onList = (slug: string) => entries.some((e) => e.recipe?.slug === slug);
   return (
     <section className="fridge-results">
       <h2>
@@ -206,7 +210,8 @@ function Results({ title, hint, hits }: { title: string; hint?: string; hits: Fr
       {hint && <p className="small muted fridge-hint">{hint}</p>}
       <div className="card-grid">
         {hits.map((h) => (
-          <RecipeCardView key={h.recipe.slug} recipe={h.recipe}>
+          <div key={h.recipe.slug} className="collection-item">
+          <RecipeCardView recipe={h.recipe}>
             {h.missing.length ? (
               <p className="fridge-need small">
                 <strong>Need{h.missing.length > 2 ? ` ${h.missing.length}` : ''}:</strong> {h.missing.slice(0, SHOW_MISSING).join(' · ')}
@@ -218,6 +223,21 @@ function Results({ title, hint, hits }: { title: string; hint?: string; hits: Fr
               </p>
             )}
           </RecipeCardView>
+          {h.missing.length > 0 &&
+            (onList(h.recipe.slug) ? (
+              <Link to="/shopping" className="small">
+                On your shopping list ✓
+              </Link>
+            ) : (
+              <button
+                type="button"
+                className="text-button small"
+                onClick={() => shopping.add(h.missing.map((m) => entryFromText(m, { slug: h.recipe.slug, title: h.recipe.title })))}
+              >
+                Add the missing {h.missing.length === 1 ? 'one' : h.missing.length} to the shopping list
+              </button>
+            ))}
+          </div>
         ))}
       </div>
     </section>

@@ -1,7 +1,9 @@
 import { Router, type Response } from 'express';
 import { and, asc, count, eq, isNull, ne } from 'drizzle-orm';
 import { db } from '../db/client.js';
-import { invites, recipes, sessions, users } from '../db/schema.js';
+import { invites, recipeIngredients, recipes, recipeSteps, sessions, users } from '../db/schema.js';
+import { detectTimer, parseIngredientLine } from '../../shared/parse.js';
+import { invalidateSearchIndex } from '../searchIndex.js';
 import { isRole, looksLikeEmail, normalizeEmail, type PeopleAdminResponse } from '../../shared/auth.js';
 import { sendInvite } from '../auth/accounts.js';
 import { requireRole } from '../auth/session.js';
@@ -149,4 +151,44 @@ adminRouter.delete('/admin/users/:id', async (req, res) => {
   await db.update(users).set({ removedAt: new Date() }).where(eq(users.id, id));
   await db.delete(sessions).where(eq(sessions.userId, id));
   res.json({ ok: true });
+});
+
+// POST /api/admin/reparse: reads every saved ingredient and step again with the
+// current rules (parser fixes only reach recipes saved after them otherwise).
+// The text people typed never changes; only how it's read. Exact gram weights stay.
+adminRouter.post('/admin/reparse', async (_req, res) => {
+  const [ingredientRows, stepRows] = await Promise.all([
+    db
+      .select({
+        id: recipeIngredients.id,
+        rawText: recipeIngredients.rawText,
+        quantity: recipeIngredients.quantity,
+        quantityMax: recipeIngredients.quantityMax,
+        unit: recipeIngredients.unit,
+        item: recipeIngredients.item,
+        note: recipeIngredients.note,
+      })
+      .from(recipeIngredients),
+    db.select({ id: recipeSteps.id, text: recipeSteps.text, timerSeconds: recipeSteps.timerSeconds }).from(recipeSteps),
+  ]);
+
+  let ingredientsChanged = 0;
+  let stepsChanged = 0;
+  await db.transaction(async (tx) => {
+    for (const row of ingredientRows) {
+      const p = parseIngredientLine(row.rawText);
+      const next = { quantity: p.quantity, quantityMax: p.quantityMax, unit: p.unit, item: p.item, note: p.note };
+      if (next.quantity === row.quantity && next.quantityMax === row.quantityMax && next.unit === row.unit && next.item === row.item && next.note === row.note) continue;
+      await tx.update(recipeIngredients).set(next).where(eq(recipeIngredients.id, row.id));
+      ingredientsChanged++;
+    }
+    for (const row of stepRows) {
+      const timer = detectTimer(row.text);
+      if (timer === row.timerSeconds) continue;
+      await tx.update(recipeSteps).set({ timerSeconds: timer }).where(eq(recipeSteps.id, row.id));
+      stepsChanged++;
+    }
+  });
+  invalidateSearchIndex();
+  res.json({ ingredients: ingredientRows.length, ingredientsChanged, steps: stepRows.length, stepsChanged });
 });

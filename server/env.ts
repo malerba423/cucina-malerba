@@ -39,5 +39,11 @@ export const env = {
 
   // Photos: a Cloud Storage bucket in production; without it, a local .uploads/ folder.
   gcsBucket: process.env.GCS_BUCKET || null,
+
+  // "Tidy this up" (milestone 11). Without a key the button simply doesn't show.
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY || null,
+  anthropicModel: process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5',
+  // Safety net on top of the spending limit set in the Anthropic console.
+  tidyPerDay: Number(process.env.TIDY_PER_DAY) || 200,
   emailFrom: process.env.EMAIL_FROM || `${SITE_NAME} <noreply@jmalerba.dev>`,
 };

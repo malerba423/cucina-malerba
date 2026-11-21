@@ -114,6 +114,9 @@ export function ShoppingPage() {
             <button type="button" className="button" onClick={share}>
               Share list
             </button>
+            <button type="button" className="button" onClick={() => window.print()}>
+              Print
+            </button>
             {ticked > 0 && (
               <button type="button" className="button" onClick={() => shopping.clearChecked()}>
                 Clear {ticked} ticked

@@ -11,6 +11,7 @@ import { adminRouter } from './routes/admin.js';
 import { recipeWriteRouter } from './routes/recipeWrite.js';
 import { importRouter } from './routes/import.js';
 import { familyRouter } from './routes/family.js';
+import { tidyRouter } from './routes/tidy.js';
 import { LOCAL_MEDIA_PATH, LOCAL_UPLOAD_DIR } from './storage.js';
 import { loadUser } from './auth/session.js';
 import { originCheck } from './middleware/originCheck.js';
@@ -37,6 +38,7 @@ app.use('/api', recipesRouter);
 app.use('/api', recipeWriteRouter);
 app.use('/api', importRouter);
 app.use('/api', familyRouter);
+app.use('/api', tidyRouter);
 app.use('/api', adminRouter);
 app.use('/api', (_req, res) => {
   res.status(404).json({ error: 'Not found' });

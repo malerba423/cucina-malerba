@@ -69,6 +69,7 @@ export function PeoplePage() {
           </ul>
         </section>
         <p className="notice small">Every recipe shows who added it. Remove someone and their recipes stay, credited to them.</p>
+        <Reparse />
         <Link to="/" className="small">
           ← Back to recipes
         </Link>
@@ -237,5 +238,37 @@ function InviteRow({ invite, onChanged }: { invite: PeopleAdminResponse['invites
         Remove
       </button>
     </li>
+  );
+}
+
+/** Owner tool: re-read every recipe with the latest parsing rules. */
+function Reparse() {
+  const [state, setState] = useState<{ busy: boolean; text: string | null }>({ busy: false, text: null });
+  const run = async () => {
+    setState({ busy: true, text: null });
+    const r = await send<{ ingredients: number; ingredientsChanged: number; steps: number; stepsChanged: number }>('/api/admin/reparse', 'POST');
+    setState({
+      busy: false,
+      text: r.ok
+        ? `Done. ${r.data.ingredientsChanged} of ${r.data.ingredients} ingredient lines and ${r.data.stepsChanged} of ${r.data.steps} step timers were updated.`
+        : r.error,
+    });
+  };
+  return (
+    <section className="explain ruled">
+      <h2>Maintenance</h2>
+      <p className="small muted">
+        When the way amounts are read improves (like “1-3/4 cups”), older recipes keep the old reading until they're saved again. This
+        re-reads them all at once. The text people typed doesn't change, and exact gram weights stay.
+      </p>
+      <button type="button" className="button button-small" onClick={run} disabled={state.busy}>
+        {state.busy ? 'Re-reading…' : 'Re-read all recipes'}
+      </button>
+      {state.text && (
+        <p className="small" role="status">
+          {state.text}
+        </p>
+      )}
+    </section>
   );
 }

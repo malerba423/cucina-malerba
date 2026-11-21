@@ -4,8 +4,34 @@ import { send } from '../api';
 import { useAuth } from '../auth';
 import { Link, useRouter } from '../router';
 import { EMPTY, RecipeForm, type FormState } from './EditRecipePage';
+import { ShareHelp } from './ShareHelp';
 
 type Mode = 'link' | 'paste';
+
+/**
+ * What arrived from the phone's share sheet or a bookmarklet. Apps share
+ * differently: some send ?url=, many put the link inside ?text= ("Check out
+ * this reel! https://…"), and a few send only text.
+ */
+function fromShare(search: URLSearchParams): { url: string; text: string } {
+  const url = search.get('url')?.trim() ?? '';
+  const text = search.get('text')?.trim() ?? '';
+  const title = search.get('title')?.trim() ?? '';
+  if (/^https?:\/\/\S+$/i.test(url)) return { url, text: '' };
+  // The link can arrive wrapped in words, even in ?url= (an iPhone Shortcut passes whatever was shared).
+  const found = /https?:\/\/[^\s<>"']+/i.exec(`${url} ${text} ${title}`)?.[0]?.replace(/[).,!?]+$/, '') ?? '';
+  if (found) return { url: found, text: '' };
+  return { url: '', text: text || url };
+}
+
+/** Remembers where to come back to after signing in from the email link. */
+export function rememberReturn(path: string) {
+  try {
+    localStorage.setItem('cucina.afterSignIn', JSON.stringify({ path, at: Date.now() }));
+  } catch {
+    // not remembered: they land on the home page instead
+  }
+}
 
 function toForm(d: RecipeDraft): FormState {
   const n = (v: number | null) => (v == null ? '' : String(v));
@@ -32,9 +58,10 @@ function toForm(d: RecipeDraft): FormState {
 export function ImportPage() {
   const { user, ready } = useAuth();
   const { search } = useRouter();
-  const [mode, setMode] = useState<Mode>('link');
-  const [url, setUrl] = useState(search.get('url') ?? '');
-  const [pasted, setPasted] = useState(search.get('text') ?? '');
+  const shared = fromShare(search);
+  const [mode, setMode] = useState<Mode>(shared.text && !shared.url ? 'paste' : 'link');
+  const [url, setUrl] = useState(shared.url);
+  const [pasted, setPasted] = useState(shared.text);
   const [pasteLink, setPasteLink] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,9 +98,9 @@ export function ImportPage() {
     setResult({ draft, found: draft.ingredients.length ? 'text' : 'little', notes, duplicate: null, key: Date.now() });
   };
 
-  // /import?url=… (from a bookmark or, later, the phone's share sheet) starts right away.
+  // A shared link (share sheet, Shortcut or bookmarklet) starts right away.
   useEffect(() => {
-    if (!ready || !user || autoRan.current || !search.get('url')) return;
+    if (!ready || !user || autoRan.current || !shared.url) return;
     autoRan.current = true;
     void importLink();
   }, [ready, user]);
@@ -83,8 +110,8 @@ export function ImportPage() {
     return (
       <main className="narrow auth">
         <h1>Sign in to import recipes</h1>
-        <p className="muted">Importing is for family who've been invited.</p>
-        <Link to="/signin" className="button button-primary">
+        <p className="muted">Importing is for family who've been invited.{shared.url ? ' The link you shared will be waiting after you sign in.' : ''}</p>
+        <Link to="/signin" className="button button-primary" onClick={() => rememberReturn(`${window.location.pathname}${window.location.search}`)}>
           Family sign-in
         </Link>
       </main>
@@ -191,6 +218,8 @@ export function ImportPage() {
       <p className="small muted import-alt">
         Typing one in from a card? <Link to="/recipes/new">Add it by hand</Link>.
       </p>
+
+      <ShareHelp />
     </main>
   );
 }

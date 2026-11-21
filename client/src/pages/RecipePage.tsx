@@ -120,8 +120,11 @@ function Recipe({ recipe, reload }: { recipe: RecipeDetail; reload: () => void }
                 Start cooking
               </Link>
             )}
-            <button type="button" className="button" onClick={() => window.print()}>
-              Print card
+            <button type="button" className="button" onClick={() => printAs('page')}>
+              Print
+            </button>
+            <button type="button" className="button" onClick={() => printAs('card')} title="Just the ingredients and steps, sized for a 4×6 index card">
+              Print minimal
             </button>
             {canEdit && (
               <Link to={`/recipes/${encodeURIComponent(recipe.slug)}/edit`} className="button">
@@ -277,4 +280,16 @@ function describeSource(r: RecipeDetail): { label: string; url: string | null } 
   const label = r.sourcePerson ?? r.sourceName ?? SOURCE_LABELS[r.sourceType];
   const url = r.sourceUrl && /^https?:\/\//i.test(r.sourceUrl) ? r.sourceUrl : null;
   return { label, url };
+}
+
+/** Prints the recipe as a full page or a 4×6 index card (the print styles key off data-print). */
+function printAs(kind: 'page' | 'card') {
+  const root = document.documentElement;
+  root.dataset.print = kind;
+  const done = () => {
+    delete root.dataset.print;
+    window.removeEventListener('afterprint', done);
+  };
+  window.addEventListener('afterprint', done);
+  window.print();
 }

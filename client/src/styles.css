@@ -2123,6 +2123,64 @@ select {
   align-self: flex-start;
 }
 
+/* ---------- tidy this up ---------- */
+.tidy-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+}
+.tidy-notes {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+/* ---------- share help (import page) ---------- */
+.share-help {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+.share-help h2 {
+  margin: 0 0 10px;
+  font-size: 18px;
+}
+.share-help details {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.share-help summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.share-help ol {
+  margin: 10px 0 4px;
+  padding-left: 22px;
+}
+.share-help li + li {
+  margin-top: 6px;
+}
+.share-help code {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  word-break: break-all;
+}
+.bookmarklet {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.bookmarklet code {
+  flex: 1;
+}
+
 /* ---------- people (owner) ---------- */
 .people-page {
   max-width: 1120px;
@@ -2237,29 +2295,173 @@ select {
 }
 
 /* ---------- print: one recipe as a card ---------- */
+@page {
+  margin: 0.55in;
+}
+@page card {
+  size: 4in 6in;
+  margin: 0.22in;
+}
+
 @media print {
-  :root {
+  :root,
+  :root[data-theme='dark'] {
     --bg: #fff;
     --surface: #fff;
     --ink: #000;
     --ink-muted: #444;
     --brand: #000;
+    --accent: #000;
     --line: #bbb;
+    --line-soft: #ddd;
+    --chip: #eee;
+  }
+  body {
+    background: #fff;
   }
   .topbar,
   .crumbs,
   .no-print,
   .recipe-photo,
   .made-log,
-  .skip-link {
+  .collections-line,
+  .variations,
+  .skip-link,
+  .list-add {
     display: none !important;
   }
   .recipe {
     padding: 0;
   }
   .steps li,
-  .checklist {
+  .checklist li,
+  .note {
     break-inside: avoid;
+  }
+  .checklist {
+    border: 0;
+    padding: 0;
+  }
+  .steps li {
+    border: 0;
+    padding: 6px 0;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  /* Full page: photo-less, two columns when there's room. */
+  html[data-print='page'] .recipe-hero {
+    display: block;
+  }
+
+  /* 4×6 index card: just the essentials, small and dense. */
+  html[data-print='card'] .recipe {
+    page: card;
+    font-size: 8.5pt;
+    line-height: 1.3;
+  }
+  html[data-print='card'] .recipe-hero {
+    display: block;
+    margin: 0;
+  }
+  html[data-print='card'] .recipe-intro h1 {
+    margin: 0 0 2pt;
+    font-size: 15pt;
+  }
+  html[data-print='card'] .recipe-intro > p,
+  html[data-print='card'] .recipe-intro .eyebrow,
+  html[data-print='card'] .recipe-intro .chips,
+  html[data-print='card'] .notes,
+  html[data-print='card'] .section-head .controls,
+  html[data-print='card'] .variation-of {
+    display: none !important;
+  }
+  html[data-print='card'] .source-card {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 8pt;
+    margin: 0 0 4pt;
+    padding: 0;
+    border: 0;
+    font-size: 7pt;
+  }
+  html[data-print='card'] .recipe-body {
+    display: block;
+    margin-top: 4pt;
+  }
+  html[data-print='card'] .recipe-body h2 {
+    margin: 4pt 0 2pt;
+    font-size: 9pt;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  html[data-print='card'] .ingredients {
+    gap: 0;
+  }
+  html[data-print='card'] .checklist {
+    columns: 2;
+    column-gap: 10pt;
+  }
+  html[data-print='card'] .checklist label {
+    padding: 1pt 0;
+    gap: 4pt;
+  }
+  html[data-print='card'] .checklist input {
+    width: 7pt;
+    height: 7pt;
+    margin-top: 2pt;
+  }
+  html[data-print='card'] .checklist li + li {
+    border: 0;
+  }
+  html[data-print='card'] .ingredient-group .label {
+    margin: 2pt 0 0;
+    font-size: 7pt;
+  }
+  html[data-print='card'] .steps {
+    gap: 0;
+  }
+  html[data-print='card'] .steps ol {
+    gap: 2pt;
+  }
+  html[data-print='card'] .steps li {
+    gap: 5pt;
+    padding: 0;
+  }
+  html[data-print='card'] .step-number {
+    width: 11pt;
+    height: 11pt;
+    font-size: 7pt;
+  }
+  html[data-print='card'] .timer {
+    display: none;
+  }
+
+  /* Shopping list: just the unticked list, two columns. */
+  .shopping-head .toggle,
+  .shopping-head .small,
+  .shopping-add,
+  .shopping-recipes,
+  .shopping-actions,
+  .row-remove {
+    display: none !important;
+  }
+  .shopping {
+    max-width: none;
+    padding: 0;
+    columns: 2;
+    column-gap: 28pt;
+  }
+  .shopping-head {
+    column-span: all;
+  }
+  .shopping-section {
+    break-inside: avoid;
+  }
+  .shopping-row:has(.is-done) {
+    display: none;
   }
 }
 

@@ -25,7 +25,7 @@ export function VerifyPage() {
     if (result.ok) {
       window.history.replaceState(null, '', '/auth/verify'); // drop the token from the address bar
       setUser(result.data.user);
-      navigate('/');
+      navigate(returnPath());
     } else {
       setState('failed');
       setError(result.error);
@@ -54,4 +54,19 @@ export function VerifyPage() {
       </button>
     </main>
   );
+}
+
+/** Where to go after signing in: back to a shared import if one was waiting (within the hour). */
+function returnPath(): string {
+  try {
+    const raw = localStorage.getItem('cucina.afterSignIn');
+    localStorage.removeItem('cucina.afterSignIn');
+    const saved = raw ? (JSON.parse(raw) as { path?: unknown; at?: unknown }) : null;
+    if (saved && typeof saved.path === 'string' && saved.path.startsWith('/') && !saved.path.startsWith('//') && typeof saved.at === 'number' && Date.now() - saved.at < 3_600_000) {
+      return saved.path;
+    }
+  } catch {
+    // fall through
+  }
+  return '/';
 }

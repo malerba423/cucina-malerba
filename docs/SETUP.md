@@ -225,6 +225,31 @@ Locally, leave `GCS_BUCKET` empty in `.env`: photos are saved in `.uploads/` (gi
 
 ---
 
+## 10. "Tidy this up" (Claude Haiku) — milestone 11
+
+Optional. Without it the button just doesn't appear.
+
+1. Go to platform.claude.com, sign in, and add a payment method under **Billing**. Buy the smallest amount of credit; at about a tenth of a cent per tidy-up it lasts a long time.
+2. In the console's settings, find **Limits** and set a monthly **spend limit**, such as $5. That's the hard ceiling; the app also stops itself at 30 tidy-ups per person per hour and 200 per day.
+3. Under **API keys**, create a key named `cucina-malerba` and copy it.
+4. Store it for the live app (same terminal setup as step 3, key on your clipboard):
+   ```sh
+   pbpaste | gcloud secrets create ANTHROPIC_API_KEY --data-file=-
+   gcloud secrets add-iam-policy-binding ANTHROPIC_API_KEY --member="serviceAccount:cucina-run@$PROJECT_ID.iam.gserviceaccount.com" --role=roles/secretmanager.secretAccessor
+   ```
+   Then clear your clipboard.
+5. In `.github/workflows/deploy.yml`, the `--set-secrets` line becomes:
+   ```yaml
+   --set-secrets "DATABASE_URL=DATABASE_URL:latest,RESEND_API_KEY=RESEND_API_KEY:latest,ANTHROPIC_API_KEY=ANTHROPIC_API_KEY:latest" \
+   ```
+6. Push to `main`.
+
+**Check:** open any recipe's **Edit** page; a **✨ Tidy this up** button sits above Ingredients.
+
+Locally, leave `ANTHROPIC_API_KEY` empty in `.env` unless you want to try it on your Mac (each tidy-up costs about a tenth of a cent).
+
+---
+
 ## Good to know
 
 - **Cookies:** Firebase Hosting forwards only a cookie named `__session` to Cloud Run and drops the rest. The sign-in work in milestone 3 must name its session cookie `__session`.
@@ -244,6 +269,8 @@ Locally, leave `GCS_BUCKET` empty in `.env`: photos are saved in `.uploads/` (gi
 | Deploy fails with a secret "not found" error for RESEND_API_KEY | Step 8.5 not done yet: create the secret, then re-run Deploy |
 | Sign-in email never arrives | Resend dashboard → Emails shows each send and why it failed; usually the domain isn't verified yet |
 | Photo upload fails on the live site (Cloud Run logs show a storage error) | `cucina-run` lacks `roles/storage.objectAdmin` on the bucket (step 9) |
+| Deploy fails with a secret "not found" error for ANTHROPIC_API_KEY | Step 10.4 not done yet: create the secret, or take it back out of deploy.yml |
+| "Tidy this up" says the spending limit has been reached | Raise the monthly limit or add credit at platform.claude.com |
 | Photos work at first, then vanish a while later | `GCS_BUCKET` isn't reaching Cloud Run (GitHub variable or the deploy.yml edit in step 9), so photos were saved inside the container |
 | Photos upload but show as broken images | The `allUsers` viewer binding in step 9 is missing |
 | "Request blocked: it did not come from this site" | The page was opened from a different address (e.g. the .web.app or .run.app URL). Use kitchen.jmalerba.dev |
