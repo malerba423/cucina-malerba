@@ -79,7 +79,25 @@ export type RecipeDetail = {
   tags: string[];
   ingredients: IngredientLine[];
   steps: { id: number; text: string; timerSeconds: number | null }[];
-  cookLogs: { id: number; person: string | null; cookedOn: string; rating: number | null; note: string | null }[];
+  cookLogs: { id: number; person: string | null; userId: number | null; cookedOn: string; rating: number | null; note: string | null }[];
+  notes: RecipeNote[];
+  /** Set when this recipe is a variation of another. */
+  parent: { slug: string; title: string } | null;
+  variations: { slug: string; title: string; addedBy: string | null }[];
+  collections: { slug: string; name: string }[];
   madeCount: number;
   avgRating: number | null;
 };
+
+export type RecipeNote = { id: number; text: string; author: string | null; userId: number | null; createdAt: string; updatedAt: string };
+
+export type CollectionSummary = {
+  slug: string;
+  name: string;
+  description: string | null;
+  recipeCount: number;
+  photos: string[]; // up to 4, for the cover
+  createdBy: { id: number; name: string } | null;
+};
+export type CollectionListResponse = { collections: CollectionSummary[] };
+export type CollectionDetail = CollectionSummary & { recipes: RecipeCard[] };

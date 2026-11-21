@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { SITE_NAME } from '../../shared/site';
 import { ROLE_LABELS } from '../../shared/auth';
 import { AuthProvider, useAuth } from './auth';
@@ -15,6 +15,10 @@ import { EditRecipePage } from './pages/EditRecipePage';
 import { ImportPage } from './pages/ImportPage';
 import { FridgePage } from './pages/FridgePage';
 import { CookPage } from './pages/CookPage';
+import { ShoppingPage } from './pages/ShoppingPage';
+import { CollectionPage, CollectionsPage } from './pages/CollectionsPage';
+import { useShoppingEntries } from './shoppingList';
+import { buildRows } from '../../shared/shopping';
 
 export function App() {
   return (
@@ -30,6 +34,7 @@ function Shell() {
   const { pathname } = useRouter();
   const editMatch = /^\/recipes\/([^/]+)\/edit\/?$/.exec(pathname);
   const cookMatch = /^\/recipes\/([^/]+)\/cook\/?$/.exec(pathname);
+  const collectionMatch = /^\/collections\/([^/]+)\/?$/.exec(pathname);
   const recipeMatch = pathname === '/recipes/new' ? null : /^\/recipes\/([^/]+)\/?$/.exec(pathname);
 
   let page;
@@ -37,6 +42,9 @@ function Shell() {
   else if (pathname === '/recipes/new') page = <EditRecipePage />;
   else if (pathname === '/import' || pathname === '/import/') page = <ImportPage />;
   else if (pathname === '/fridge' || pathname === '/fridge/') page = <FridgePage />;
+  else if (pathname === '/shopping' || pathname === '/shopping/') page = <ShoppingPage />;
+  else if (pathname === '/collections' || pathname === '/collections/') page = <CollectionsPage />;
+  else if (collectionMatch) page = <CollectionPage slug={decodeURIComponent(collectionMatch[1])} />;
   else if (cookMatch) page = <CookPage slug={decodeURIComponent(cookMatch[1])} />;
   else if (editMatch) page = <EditRecipePage slug={decodeURIComponent(editMatch[1])} />;
   else if (recipeMatch) page = <RecipePage slug={decodeURIComponent(recipeMatch[1])} />;
@@ -68,7 +76,7 @@ function Header() {
   const { theme, toggle } = useTheme();
   const { user } = useAuth();
   const { pathname } = useRouter();
-  const section = pathname.startsWith('/import') ? 'import' : pathname.startsWith('/fridge') ? 'fridge' : 'browse';
+  const section = ['import', 'fridge', 'collections', 'shopping'].find((s) => pathname.startsWith(`/${s}`)) ?? 'browse';
   return (
     <header className="topbar">
       <Link to="/" className="logo">
@@ -78,6 +86,9 @@ function Header() {
       <nav className="topnav" aria-label="Main">
         <Link to="/" className={`topnav-link${section === 'browse' ? ' is-active' : ''}`}>
           Browse
+        </Link>
+        <Link to="/collections" className={`topnav-link${section === 'collections' ? ' is-active' : ''}`}>
+          Collections
         </Link>
         <Link to="/fridge" className={`topnav-link${section === 'fridge' ? ' is-active' : ''}`}>
           Fridge
@@ -89,6 +100,7 @@ function Header() {
         )}
       </nav>
       <AccountArea />
+      <ListButton active={section === 'shopping'} />
       <button
         type="button"
         className="icon-button"
@@ -99,6 +111,33 @@ function Header() {
         {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
       </button>
     </header>
+  );
+}
+
+/** The shopping list, with how many things are left to get. On every screen size. */
+function ListButton({ active }: { active: boolean }) {
+  const entries = useShoppingEntries();
+  // Same merge as the list page, so the numbers agree.
+  const left = useMemo(() => buildRows(entries, 'us').filter((r) => !r.checked).length, [entries]);
+  return (
+    <Link
+      to="/shopping"
+      className={`icon-button list-button${active ? ' is-active' : ''}`}
+      aria-label={left ? `Shopping list, ${left} to get` : 'Shopping list'}
+      title="Shopping list"
+    >
+      <ListIcon />
+      {left > 0 && <span className="list-count mono">{left > 99 ? '99+' : left}</span>}
+    </Link>
+  );
+}
+
+function ListIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+      <path d="M9 6h11M9 12h11M9 18h11" />
+      <path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2" />
+    </svg>
   );
 }
 

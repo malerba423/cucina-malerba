@@ -32,6 +32,8 @@ export type RecipeInput = {
   tags: string[];
   ingredients: IngredientInput[];
   steps: StepInput[];
+  /** New variations only: the recipe this is a version of. */
+  parentSlug?: string | null;
 };
 
 export const LIMITS = { title: 120, text: 2000, short: 200, ingredients: 100, steps: 60, tags: 12 };
@@ -145,6 +147,7 @@ export function validateRecipeInput(body: unknown, photoPrefixes: string[] = [])
       tags,
       ingredients,
       steps,
+      parentSlug: str(b.parentSlug, 200),
     },
   };
 }

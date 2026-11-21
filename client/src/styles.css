@@ -1179,13 +1179,18 @@ select {
 }
 
 /* ---------- search extras ---------- */
+.hero-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 28px;
+  margin: -6px 0 4px;
+}
 .fridge-link {
   display: inline-flex;
   flex-wrap: wrap;
   align-items: baseline;
   align-self: flex-start;
   gap: 8px;
-  margin: -6px 0 4px;
   color: var(--ink);
   text-decoration: none;
 }
@@ -1731,6 +1736,391 @@ select {
   .cook-progress span {
     transition: none;
   }
+}
+
+/* ---------- shopping list ---------- */
+.list-button {
+  position: relative;
+  color: var(--ink);
+  text-decoration: none;
+}
+.list-button.is-active {
+  border-color: var(--ink);
+}
+.list-count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 11px;
+  line-height: 20px;
+  text-align: center;
+}
+.list-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0 0 12px;
+}
+.shopping {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 28px clamp(16px, 4vw, 36px) 64px;
+}
+.shopping-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+.shopping-head h1 {
+  margin: 4px 0 4px;
+  font-family: var(--font-display);
+  font-size: clamp(28px, 5vw, 40px);
+  line-height: 1.1;
+}
+.shopping-add {
+  display: flex;
+  gap: 8px;
+  margin: 20px 0 12px;
+}
+.shopping-add input {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 16px;
+}
+.shopping-add .button {
+  height: 48px;
+}
+.shopping-recipes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.shopping-recipes .token a {
+  color: inherit;
+}
+.shopping-section {
+  margin-top: 18px;
+}
+.shopping-section .label {
+  margin: 0 0 6px;
+}
+.shopping-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.shopping-row label {
+  flex: 1;
+  min-width: 0;
+}
+.shopping-for {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+}
+.row-remove {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 18px;
+  cursor: pointer;
+}
+.row-remove:hover {
+  background: var(--chip);
+  color: var(--ink);
+}
+.estimate-text {
+  text-decoration: underline dotted;
+  text-decoration-color: var(--ink-muted);
+  text-underline-offset: 3px;
+}
+.shopping-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-top: 24px;
+}
+
+/* ---------- family notebook: made it, notes, variations, collections ---------- */
+.made-log .section-head,
+.notes h2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.made-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px 18px;
+  margin: 12px 0 18px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.made-form .field {
+  width: auto;
+}
+.made-form input[type='date'],
+.made-note input {
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+}
+.made-note {
+  flex: 1 1 260px;
+}
+.made-note input {
+  width: 100%;
+}
+.star-field {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.star-picker {
+  display: flex;
+  gap: 2px;
+}
+.star-picker button {
+  width: 40px;
+  height: 44px;
+  border: 0;
+  background: none;
+  color: var(--line);
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+.star-picker button.on {
+  color: var(--accent);
+}
+.stars {
+  color: var(--accent);
+  letter-spacing: 1px;
+}
+.notes {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 8px clamp(16px, 4vw, 36px) 12px;
+}
+.notes h2 {
+  font-family: var(--font-display);
+}
+.note-list {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+}
+.note {
+  padding: 12px 16px;
+  border-left: 3px solid var(--accent);
+  background: var(--surface);
+  border-radius: 0 10px 10px 0;
+}
+.note + .note {
+  margin-top: 10px;
+}
+.note-text {
+  margin: 0 0 6px;
+  white-space: pre-wrap;
+}
+.note .small {
+  margin: 0;
+}
+.note-form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 720px;
+}
+.note-form textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+  resize: vertical;
+}
+.variation-of {
+  margin: -4px 0 10px;
+  color: var(--ink-muted);
+}
+.variations {
+  margin: 10px 0 0;
+}
+.collections-line {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+}
+.collections-line a.chip {
+  color: var(--ink);
+  text-decoration: none;
+}
+.chip-add {
+  border-style: dashed;
+}
+.collection-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  width: min(320px, 90vw);
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+}
+.collection-menu ul {
+  list-style: none;
+  max-height: 240px;
+  overflow-y: auto;
+  margin: 0 0 10px;
+  padding: 0;
+}
+.collection-menu li + li {
+  margin-top: 6px;
+}
+.collection-menu .row .field {
+  flex: 1;
+}
+.collection-menu input:not([type='checkbox']) {
+  height: 36px;
+}
+
+.collections {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px clamp(16px, 4vw, 36px) 64px;
+}
+.collections h1 {
+  margin: 4px 0 6px;
+  font-family: var(--font-display);
+  font-size: clamp(28px, 5vw, 42px);
+  line-height: 1.1;
+}
+.collection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 18px;
+  margin: 22px 0;
+}
+.collection-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+}
+.collection-card:hover {
+  border-color: var(--ink-muted);
+}
+.collection-cover {
+  display: grid;
+  aspect-ratio: 16 / 10;
+  gap: 2px;
+}
+.collection-cover.n2 {
+  grid-template-columns: 1fr 1fr;
+}
+.collection-cover.n3 {
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: 1fr 1fr;
+}
+.collection-cover.n3 span:first-child {
+  grid-row: span 2;
+}
+.collection-cover.n4 {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+}
+.collection-cover span {
+  background: center / cover no-repeat;
+}
+.collection-body {
+  padding: 12px 14px 14px;
+}
+.collection-body h2 {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-size: 20px;
+}
+.collection-body p {
+  margin: 4px 0 0;
+}
+.collection-new {
+  margin-top: 28px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.collection-new h2 {
+  margin: 0 0 10px;
+  font-size: 18px;
+}
+.collection-new .field {
+  width: auto;
+}
+.collection-new .field.grow {
+  flex: 1 1 260px;
+}
+.collection-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.collection-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.collection-item .text-button {
+  align-self: flex-start;
 }
 
 /* ---------- people (owner) ---------- */

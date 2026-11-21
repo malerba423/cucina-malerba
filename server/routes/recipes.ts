@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { eq } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 import { db } from '../db/client.js';
-import { recipes } from '../db/schema.js';
+import { recipes, users } from '../db/schema.js';
 import { getSearchIndex } from '../searchIndex.js';
 import { fridgeMatches, monthBound, searchDocs, type SearchDoc, type SearchParams } from '../../shared/search.js';
 import {
@@ -140,6 +140,8 @@ recipesRouter.get('/recipes/:slug', async (req, res) => {
       steps: { orderBy: (s, { asc }) => [asc(s.position)] },
       tags: { with: { tag: true } },
       cookLogs: { with: { person: true }, orderBy: (c, { desc }) => [desc(c.cookedOn), desc(c.id)] },
+      notes: { with: { user: { columns: { name: true } } }, orderBy: (n, { asc }) => [asc(n.createdAt)] },
+      collections: { with: { collection: { columns: { slug: true, name: true } } } },
     },
   });
 
@@ -149,6 +151,17 @@ recipesRouter.get('/recipes/:slug', async (req, res) => {
   }
 
   const ratings = recipe.cookLogs.map((c) => c.rating).filter((r): r is number => r != null);
+  const [parentRows, variationRows] = await Promise.all([
+    recipe.parentRecipeId
+      ? db.select({ slug: recipes.slug, title: recipes.title }).from(recipes).where(eq(recipes.id, recipe.parentRecipeId)).limit(1)
+      : Promise.resolve([]),
+    db
+      .select({ slug: recipes.slug, title: recipes.title, addedBy: users.name })
+      .from(recipes)
+      .leftJoin(users, eq(recipes.addedByUserId, users.id))
+      .where(eq(recipes.parentRecipeId, recipe.id))
+      .orderBy(asc(recipes.createdAt)),
+  ]);
   const body: RecipeDetail = {
     slug: recipe.slug,
     title: recipe.title,
@@ -183,10 +196,22 @@ recipesRouter.get('/recipes/:slug', async (req, res) => {
     cookLogs: recipe.cookLogs.map((c) => ({
       id: c.id,
       person: c.person?.name ?? null,
+      userId: c.userId,
       cookedOn: c.cookedOn,
       rating: c.rating,
       note: c.note,
     })),
+    notes: recipe.notes.map((n) => ({
+      id: n.id,
+      text: n.text,
+      author: n.user?.name ?? null,
+      userId: n.userId,
+      createdAt: n.createdAt.toISOString(),
+      updatedAt: n.updatedAt.toISOString(),
+    })),
+    parent: parentRows[0] ?? null,
+    variations: variationRows,
+    collections: recipe.collections.map((c) => c.collection).sort((a, b) => a.name.localeCompare(b.name)),
     madeCount: recipe.cookLogs.length,
     avgRating: ratings.length ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) / 10 : null,
   };

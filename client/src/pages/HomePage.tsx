@@ -22,6 +22,7 @@ const TAGS_SHOWN = 12;
 const QUICK = [
   { key: 'under30', label: 'Under 30 min' },
   { key: 'never-made', label: 'Never made' },
+  { key: 'made-often', label: 'Made 3+ times' },
   { key: 'rated4', label: '★ 4+' },
 ] as const;
 
@@ -104,9 +105,14 @@ export function HomePage() {
     <>
       <section className="hero">
         <h1>What are we cooking?</h1>
-        <Link to="/fridge" className="fridge-link">
-          <span className="mono small">FRIDGE MODE</span> What can I make with what I have? →
-        </Link>
+        <div className="hero-links">
+          <Link to="/fridge" className="fridge-link">
+            <span className="mono small">FRIDGE MODE</span> What can I make with what I have? →
+          </Link>
+          <Link to="/collections" className="fridge-link">
+            <span className="mono small">COLLECTIONS</span> Holidays, favorites, standbys →
+          </Link>
+        </div>
         <form className="search" role="search" onSubmit={onSubmit}>
           <label className="search-field">
             <SearchIcon />

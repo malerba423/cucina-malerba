@@ -4,15 +4,19 @@ import type { RecipeDetail } from '../../../shared/types';
 import { SOURCE_LABELS } from '../../../shared/types';
 import { formatMinutes, formatQuantity, formatTimer } from '../../../shared/units';
 import { groupIngredients, IngredientText, useUnitSystem } from '../ingredients';
+import { entriesFromRecipe } from '../../../shared/shopping';
+import { shopping, useShoppingEntries } from '../shoppingList';
 import { useApi } from '../api';
 import { useAuth } from '../auth';
 import { canEditRecipe } from '../../../shared/auth';
 import { longDate, tintFor } from '../format';
-import { Link } from '../router';
+import { Link, useRouter } from '../router';
+import { CollectionsPicker, MadeItSection, NotesSection } from './RecipeFamily';
 import { NotFoundPage } from './NotFoundPage';
 
 export function RecipePage({ slug }: { slug: string }) {
-  const state = useApi<RecipeDetail>(`/api/recipes/${encodeURIComponent(slug)}`);
+  const [version, setVersion] = useState(0);
+  const state = useApi<RecipeDetail>(`/api/recipes/${encodeURIComponent(slug)}${version ? `?v=${version}` : ''}`);
 
   useEffect(() => {
     if (state.status === 'ok') document.title = `${state.data.title} · ${SITE_NAME}`;
@@ -35,16 +39,20 @@ export function RecipePage({ slug }: { slug: string }) {
     );
 
   const recipe = state.data!;
-  return <Recipe key={recipe.slug} recipe={recipe} />;
+  return <Recipe key={recipe.slug} recipe={recipe} reload={() => setVersion((v) => v + 1)} />;
 }
 
-function Recipe({ recipe }: { recipe: RecipeDetail }) {
+function Recipe({ recipe, reload }: { recipe: RecipeDetail; reload: () => void }) {
   const { user } = useAuth();
+  const { search } = useRouter();
   const canEdit = canEditRecipe(user, recipe.addedBy?.id ?? null);
   const base = recipe.servings ?? null;
   const [amount, setAmount] = useState<number>(base ?? 1); // servings, or a multiplier when servings is unknown
   const [system, chooseSystem] = useUnitSystem();
   const [checked, setChecked] = useState<Set<number>>(new Set());
+  const listEntries = useShoppingEntries();
+  const onList = listEntries.some((e) => e.recipe?.slug === recipe.slug);
+  const [listNote, setListNote] = useState<string | null>(null);
 
   const factor = base ? amount / base : amount;
   const step = base ? (base > 12 ? Math.max(1, Math.round(base / 4)) : 1) : 0.5;
@@ -69,6 +77,11 @@ function Recipe({ recipe }: { recipe: RecipeDetail }) {
         <div className="recipe-intro">
           {recipe.tags.length > 0 && <p className="eyebrow">{recipe.tags.join(' · ').toUpperCase()}</p>}
           <h1>{recipe.title}</h1>
+          {recipe.parent && (
+            <p className="variation-of small">
+              A variation of <Link to={`/recipes/${encodeURIComponent(recipe.parent.slug)}`}>{recipe.parent.title}</Link>
+            </p>
+          )}
           {recipe.description && <p className="muted">{recipe.description}</p>}
 
           <div className="source-card ruled">
@@ -115,7 +128,27 @@ function Recipe({ recipe }: { recipe: RecipeDetail }) {
                 Edit
               </Link>
             )}
+            {user && (
+              <Link to={`/recipes/new?variationOf=${encodeURIComponent(recipe.slug)}`} className="button" title="Save your own version, linked to this one">
+                Make a variation
+              </Link>
+            )}
           </div>
+
+          <CollectionsPicker recipe={recipe} me={user} onChanged={reload} />
+
+          {recipe.variations.length > 0 && (
+            <p className="variations small">
+              <span className="mono muted">VARIATIONS </span>
+              {recipe.variations.map((v, i) => (
+                <span key={v.slug}>
+                  {i > 0 && ' · '}
+                  <Link to={`/recipes/${encodeURIComponent(v.slug)}`}>{v.title}</Link>
+                  {v.addedBy ? <span className="muted"> ({v.addedBy})</span> : null}
+                </span>
+              ))}
+            </p>
+          )}
         </div>
       </section>
 
@@ -147,6 +180,29 @@ function Recipe({ recipe }: { recipe: RecipeDetail }) {
                 </button>
               </div>
             </div>
+          </div>
+
+          <div className="list-add no-print">
+            <button
+              type="button"
+              className="button button-small"
+              onClick={() => {
+                // Ticked ingredients are things you already have: leave them off.
+                const lines = recipe.ingredients.filter((i) => !checked.has(i.id));
+                if (onList) shopping.removeRecipe(recipe.slug);
+                shopping.add(entriesFromRecipe(recipe, lines, factor));
+                setListNote(`${onList ? 'Updated' : 'Added'} ${lines.length} ${lines.length === 1 ? 'item' : 'items'}${checked.size ? ' (skipped the ticked ones)' : ''}.`);
+              }}
+            >
+              {onList ? 'Update shopping list' : 'Add to shopping list'}
+            </button>
+            {listNote ? (
+              <span className="small muted" role="status">
+                {listNote} <Link to="/shopping">See the list</Link>
+              </span>
+            ) : (
+              <span className="small muted">Tick what you already have first and it's left off.</span>
+            )}
           </div>
 
           {factor !== 1 && (
@@ -210,23 +266,8 @@ function Recipe({ recipe }: { recipe: RecipeDetail }) {
         </div>
       </section>
 
-      {recipe.cookLogs.length > 0 && (
-        <section className="made-log">
-          <h2>Made it · {recipe.madeCount} {recipe.madeCount === 1 ? 'time' : 'times'}</h2>
-          <div className="log-grid">
-            {recipe.cookLogs.map((log) => (
-              <div key={log.id} className="log-entry">
-                <p className="mono small muted">
-                  {longDate(log.cookedOn).toUpperCase()}
-                  {log.person ? ` · ${log.person.toUpperCase()}` : ''}
-                  {log.rating ? ` · ${'★'.repeat(log.rating)}` : ''}
-                </p>
-                {log.note && <p>{log.note}</p>}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      <NotesSection recipe={recipe} me={user} onChanged={reload} />
+      <MadeItSection recipe={recipe} me={user} startOpen={search.get('made') === '1'} onChanged={reload} />
     </main>
   );
 }

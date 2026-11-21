@@ -12,6 +12,7 @@ import {
   text,
   timestamp,
   uniqueIndex,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 
 // Milestone 1's smoke-test table. Harmless; kept so the first migration stays valid.
@@ -142,12 +143,59 @@ export const cookLogs = pgTable(
       .notNull()
       .references(() => recipes.id, { onDelete: 'cascade' }),
     personId: integer('person_id').references(() => people.id, { onDelete: 'set null' }),
+    userId: integer('user_id').references((): AnyPgColumn => users.id, { onDelete: 'set null' }), // who logged it (milestone 9)
     cookedOn: date('cooked_on', { mode: 'string' }).notNull(),
     rating: smallint('rating'), // 1–5, optional
     note: text('note'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('cook_logs_recipe_idx').on(t.recipeId)],
+);
+
+// Family notes and tweaks on a recipe ("less salt", "Mom adds brown butter"),
+// kept separate from the recipe so nobody has to edit the original.
+export const recipeNotes = pgTable(
+  'recipe_notes',
+  {
+    id: serial('id').primaryKey(),
+    recipeId: integer('recipe_id')
+      .notNull()
+      .references(() => recipes.id, { onDelete: 'cascade' }),
+    userId: integer('user_id').references((): AnyPgColumn => users.id, { onDelete: 'set null' }),
+    text: text('text').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('recipe_notes_recipe_idx').on(t.recipeId)],
+);
+
+// Shared family collections ("Thanksgiving", "Weeknight rotation").
+export const collections = pgTable(
+  'collections',
+  {
+    id: serial('id').primaryKey(),
+    slug: text('slug').notNull(),
+    name: text('name').notNull(),
+    description: text('description'),
+    createdByUserId: integer('created_by_user_id').references((): AnyPgColumn => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('collections_slug_idx').on(t.slug)],
+);
+
+export const collectionRecipes = pgTable(
+  'collection_recipes',
+  {
+    collectionId: integer('collection_id')
+      .notNull()
+      .references(() => collections.id, { onDelete: 'cascade' }),
+    recipeId: integer('recipe_id')
+      .notNull()
+      .references(() => recipes.id, { onDelete: 'cascade' }),
+    addedByUserId: integer('added_by_user_id').references((): AnyPgColumn => users.id, { onDelete: 'set null' }),
+    addedAt: timestamp('added_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.collectionId, t.recipeId] }), index('collection_recipes_recipe_idx').on(t.recipeId)],
 );
 
 // ---------- sign-in (milestone 3) ----------
@@ -229,6 +277,22 @@ export const recipesRelations = relations(recipes, ({ one, many }) => ({
   steps: many(recipeSteps),
   tags: many(recipeTags),
   cookLogs: many(cookLogs),
+  notes: many(recipeNotes),
+  collections: many(collectionRecipes),
+}));
+
+export const recipeNotesRelations = relations(recipeNotes, ({ one }) => ({
+  recipe: one(recipes, { fields: [recipeNotes.recipeId], references: [recipes.id] }),
+  user: one(users, { fields: [recipeNotes.userId], references: [users.id] }),
+}));
+
+export const collectionsRelations = relations(collections, ({ many }) => ({
+  recipes: many(collectionRecipes),
+}));
+
+export const collectionRecipesRelations = relations(collectionRecipes, ({ one }) => ({
+  collection: one(collections, { fields: [collectionRecipes.collectionId], references: [collections.id] }),
+  recipe: one(recipes, { fields: [collectionRecipes.recipeId], references: [recipes.id] }),
 }));
 
 export const recipeIngredientsRelations = relations(recipeIngredients, ({ one }) => ({
@@ -251,6 +315,7 @@ export const recipeTagsRelations = relations(recipeTags, ({ one }) => ({
 export const cookLogsRelations = relations(cookLogs, ({ one }) => ({
   recipe: one(recipes, { fields: [cookLogs.recipeId], references: [recipes.id] }),
   person: one(people, { fields: [cookLogs.personId], references: [people.id] }),
+  user: one(users, { fields: [cookLogs.userId], references: [users.id] }),
 }));
 
 export const usersRelations = relations(users, ({ one, many }) => ({

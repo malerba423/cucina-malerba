@@ -87,7 +87,10 @@ function fromRecipe(r: RecipeDetail): FormState {
 /** /recipes/new and /recipes/:slug/edit */
 export function EditRecipePage({ slug }: { slug?: string }) {
   const { user, ready } = useAuth();
+  const { search } = useRouter();
+  const variationOf = slug ? null : search.get('variationOf');
   const existing = useApi<RecipeDetail>(slug ? `/api/recipes/${encodeURIComponent(slug)}` : null);
+  const original = useApi<RecipeDetail>(variationOf ? `/api/recipes/${encodeURIComponent(variationOf)}` : null);
 
   if (!ready) return null;
   if (!user) {
@@ -99,6 +102,38 @@ export function EditRecipePage({ slug }: { slug?: string }) {
           Family sign-in
         </Link>
       </main>
+    );
+  }
+  if (variationOf) {
+    if (original.status === 'not-found') return <NotFoundPage what="recipe" />;
+    if (original.status === 'error') return <main className="narrow"><p className="notice notice-warn">{original.message}</p></main>;
+    if (original.status !== 'ok') return <main className="narrow"><p className="muted">Loading…</p></main>;
+    const o = original.data;
+    // Your own version: starts as a copy, credited to you, linked back to the original.
+    const initial: FormState = {
+      ...fromRecipe(o),
+      title: `${o.title} (${user.name}'s version)`.slice(0, 120),
+      sourceType: 'original',
+      sourcePersonName: user.name,
+      sourceName: '',
+      sourceUrl: '',
+      sourceNote: '',
+    };
+    return (
+      <RecipeForm
+        key={`variation-${o.slug}`}
+        initial={initial}
+        defaultPerson={user.name}
+        parentSlug={o.slug}
+        eyebrow="NEW VARIATION"
+        startDirty
+        banner={
+          <p className="notice import-hint-banner">
+            A copy of <Link to={`/recipes/${encodeURIComponent(o.slug)}`}>{o.title}</Link> to change however you like. The original stays as it is,
+            and the two link to each other.
+          </p>
+        }
+      />
     );
   }
   if (!slug) return <RecipeForm initial={EMPTY} defaultPerson={user.name} />;
@@ -135,9 +170,11 @@ type RecipeFormProps = {
   banner?: ReactNode;
   /** Starts unsaved (an import is unsaved work even before any edits). */
   startDirty?: boolean;
+  /** Saving a new variation of this recipe. */
+  parentSlug?: string;
 };
 
-export function RecipeForm({ initial, slug, defaultPerson, importedPhoto = null, eyebrow, cancel, banner, startDirty = false }: RecipeFormProps) {
+export function RecipeForm({ initial, slug, defaultPerson, importedPhoto = null, eyebrow, cancel, banner, startDirty = false, parentSlug }: RecipeFormProps) {
   const { navigate } = useRouter();
   const [f, setF] = useState<FormState>(initial);
   const [dirty, setDirty] = useState(startDirty);
@@ -236,6 +273,7 @@ export function RecipeForm({ initial, slug, defaultPerson, importedPhoto = null,
         weightGrams: f.weights[l.rawText] ? Number(f.weights[l.rawText]) : null,
       })),
       steps,
+      parentSlug: parentSlug ?? null,
     };
 
     setSaving(true);

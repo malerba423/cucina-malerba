@@ -70,6 +70,13 @@ async function writeChildren(tx: Tx, recipeId: number, v: RecipeInput) {
   for (const name of v.tags) await tx.insert(recipeTags).values({ recipeId, tagId: await tagId(tx, name) }).onConflictDoNothing();
 }
 
+/** Deletes a photo unless another recipe still uses it (a variation can share its original's photo). */
+async function deletePhotoIfUnused(url: string | null) {
+  if (!url) return;
+  const [other] = await db.select({ id: recipes.id }).from(recipes).where(eq(recipes.photoUrl, url)).limit(1);
+  if (!other) await deleteByUrl(url);
+}
+
 async function loadForEdit(slug: string) {
   const [row] = await db
     .select({ id: recipes.id, addedByUserId: recipes.addedByUserId, photoUrl: recipes.photoUrl })
@@ -94,6 +101,9 @@ recipeWriteRouter.post('/recipes', requireRole('contributor'), async (req, res) 
   }
   const v = result.value;
   const me = res.locals.user!;
+  const [parent] = v.parentSlug
+    ? await db.select({ id: recipes.id }).from(recipes).where(eq(recipes.slug, v.parentSlug)).limit(1)
+    : [];
 
   const slug = await db.transaction(async (tx) => {
     const slug = await uniqueSlug(tx, v.title);
@@ -104,6 +114,7 @@ recipeWriteRouter.post('/recipes', requireRole('contributor'), async (req, res) 
         ...recipeColumns(v),
         sourcePersonId: v.sourcePersonName ? await personId(tx, v.sourcePersonName) : null,
         addedByUserId: me.id,
+        parentRecipeId: parent?.id ?? null,
       })
       .returning({ id: recipes.id });
     await writeChildren(tx, row.id, v);
@@ -142,7 +153,7 @@ recipeWriteRouter.put('/recipes/:slug', requireRole('contributor'), async (req, 
       .where(eq(recipes.id, existing.id));
     await writeChildren(tx, existing.id, v);
   });
-  if (existing.photoUrl && existing.photoUrl !== v.photoUrl) await deleteByUrl(existing.photoUrl);
+  if (existing.photoUrl && existing.photoUrl !== v.photoUrl) await deletePhotoIfUnused(existing.photoUrl);
   invalidateSearchIndex();
   res.json({ slug: String(req.params.slug) });
 });
@@ -158,8 +169,10 @@ recipeWriteRouter.delete('/recipes/:slug', requireRole('contributor'), async (re
     res.status(403).json({ error: 'Only the person who added this recipe (or an editor) can delete it' });
     return;
   }
+  // Variations of it stay, just no longer linked.
+  await db.update(recipes).set({ parentRecipeId: null }).where(eq(recipes.parentRecipeId, existing.id));
   await db.delete(recipes).where(eq(recipes.id, existing.id));
-  await deleteByUrl(existing.photoUrl);
+  await deletePhotoIfUnused(existing.photoUrl);
   invalidateSearchIndex();
   res.json({ ok: true });
 });

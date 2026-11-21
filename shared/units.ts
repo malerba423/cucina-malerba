@@ -48,6 +48,12 @@ export function normalizeUnit(unit: string | null | undefined): string | null {
   return UNITS[lower] ? lower : (ALIASES[lower] ?? null);
 }
 
+/** For adding amounts together: "cup" → volume, 240 ml. Null for counted units ("clove", "can"). */
+export function unitInfo(unit: string | null | undefined): { kind: 'volume' | 'weight'; base: number } | null {
+  const key = normalizeUnit(unit);
+  return key ? { kind: UNITS[key].kind, base: UNITS[key].base } : null;
+}
+
 const FRACTIONS: [number, string][] = [
   [1 / 8, '⅛'], [1 / 4, '¼'], [1 / 3, '⅓'], [3 / 8, '⅜'], [1 / 2, '½'],
   [5 / 8, '⅝'], [2 / 3, '⅔'], [3 / 4, '¾'], [7 / 8, '⅞'],

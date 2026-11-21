@@ -4,6 +4,7 @@ import { SITE_NAME } from '../../../shared/site';
 import type { IngredientLine, RecipeDetail } from '../../../shared/types';
 import { formatQuantity, formatTimer } from '../../../shared/units';
 import { useApi } from '../api';
+import { useAuth } from '../auth';
 import { groupIngredients, IngredientText, useUnitSystem } from '../ingredients';
 import { Link, useRouter } from '../router';
 import { clock, remainingMs, useTimers, type Timer } from '../timers';
@@ -55,6 +56,7 @@ type Size = (typeof SIZES)[number];
 
 function Cook({ recipe }: { recipe: RecipeDetail }) {
   const { search } = useRouter();
+  const { user } = useAuth();
   const key = `cook.${recipe.slug}`;
   const [system, chooseSystem] = useUnitSystem();
   const base = recipe.servings ?? null;
@@ -224,7 +226,12 @@ function Cook({ recipe }: { recipe: RecipeDetail }) {
               <h1>Enjoy it.</h1>
               <p className="muted">That was the last step.</p>
               <div className="row">
-                <Link to={`/recipes/${encodeURIComponent(recipe.slug)}`} className="button button-primary">
+                {user && (
+                  <Link to={`/recipes/${encodeURIComponent(recipe.slug)}?made=1`} className="button button-primary">
+                    Log that you made it
+                  </Link>
+                )}
+                <Link to={`/recipes/${encodeURIComponent(recipe.slug)}`} className={user ? 'button' : 'button button-primary'}>
                   Back to the recipe
                 </Link>
                 <button

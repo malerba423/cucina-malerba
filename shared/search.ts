@@ -141,6 +141,7 @@ export function filterDoc(doc: SearchDoc, p: SearchParams): boolean {
   if (p.quick.has('under30') && !(doc.totalMinutes != null && doc.totalMinutes <= 30)) return false;
   if (p.quick.has('never-made') && doc.madeCount > 0) return false;
   if (p.quick.has('rated4') && !(doc.avgRating != null && doc.avgRating >= 4)) return false;
+  if (p.quick.has('made-often') && doc.madeCount < 3) return false;
   for (const t of p.tags) if (!doc.tags.includes(t)) return false;
   return true;
 }
