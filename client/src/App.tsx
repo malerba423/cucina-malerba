@@ -1,15 +1,23 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { SITE_NAME } from '../../shared/site';
+import { ROLE_LABELS } from '../../shared/auth';
+import { AuthProvider, useAuth } from './auth';
+import { initials } from './format';
 import { Link, RouterProvider, useRouter } from './router';
 import { useTheme } from './theme';
 import { HomePage } from './pages/HomePage';
 import { RecipePage } from './pages/RecipePage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { SignInPage } from './pages/SignInPage';
+import { VerifyPage } from './pages/VerifyPage';
+import { PeoplePage } from './pages/PeoplePage';
 
 export function App() {
   return (
     <RouterProvider>
-      <Shell />
+      <AuthProvider>
+        <Shell />
+      </AuthProvider>
     </RouterProvider>
   );
 }
@@ -21,6 +29,9 @@ function Shell() {
   let page;
   if (pathname === '/') page = <HomePage />;
   else if (recipeMatch) page = <RecipePage slug={decodeURIComponent(recipeMatch[1])} />;
+  else if (pathname === '/signin') page = <SignInPage />;
+  else if (pathname === '/auth/verify') page = <VerifyPage />;
+  else if (pathname === '/people') page = <PeoplePage />;
   else page = <NotFoundPage />;
 
   const isRecipe = recipeMatch != null;
@@ -52,6 +63,7 @@ function Header() {
           Browse
         </Link>
       </nav>
+      <AccountArea />
       <button
         type="button"
         className="icon-button"
@@ -62,6 +74,80 @@ function Header() {
         {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
       </button>
     </header>
+  );
+}
+
+function AccountArea() {
+  const { user, ready, signOut } = useAuth();
+  const { navigate } = useRouter();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Close the menu on outside click or Escape.
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  if (!ready) return null;
+  if (!user) {
+    return (
+      <Link to="/signin" className="signin-link mono">
+        FAMILY SIGN-IN
+      </Link>
+    );
+  }
+
+  return (
+    <div className="account" ref={ref}>
+      <button type="button" className="account-button" aria-expanded={open} aria-haspopup="menu" onClick={() => setOpen((o) => !o)}>
+        <span className="avatar avatar-sm" aria-hidden="true">
+          {initials(user.name)}
+        </span>
+        <span className="account-name">{user.name}</span>
+      </button>
+      {open && (
+        <div className="menu" role="menu">
+          <p className="menu-meta small muted">
+            {user.email}
+            <br />
+            {ROLE_LABELS[user.role]}
+          </p>
+          {user.role === 'owner' && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                navigate('/people');
+              }}
+            >
+              Who can add recipes
+            </button>
+          )}
+          <button
+            type="button"
+            role="menuitem"
+            onClick={async () => {
+              setOpen(false);
+              await signOut();
+              navigate('/');
+            }}
+          >
+            Sign out
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 

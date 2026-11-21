@@ -176,6 +176,27 @@ prints `x-robots-tag: noindex, nofollow`.
 - Link to `https://kitchen.jmalerba.dev` from jmalerba.dev.
 - Optional: a Cloudflare **Redirect Rule** from `jmalerba.dev/projects/kitchen*` to `https://kitchen.jmalerba.dev`.
 
+## 8. Sign-in emails (Resend) — milestone 3
+
+Sign-in links go out from `noreply@jmalerba.dev` through [Resend](https://resend.com) (free: 3,000 emails/month, 100/day).
+
+1. Sign up at resend.com (no card needed).
+2. **Domains → Add domain** → `jmalerba.dev`. Resend lists a few DNS records (for SPF and DKIM, which prove the emails really come from you). Add each one in **Cloudflare → DNS → Records**, exactly as shown, with **Proxy status: DNS only**. Then click **Verify** in Resend. Resend's records go on subdomains, so they shouldn't affect any email you already receive at jmalerba.dev.
+3. Optional but recommended, if jmalerba.dev has no DMARC record yet: add a TXT record named `_dmarc` with the value `v=DMARC1; p=none;`. It helps Gmail trust the emails.
+4. **API Keys → Create API key** with **Sending access** only, limited to `jmalerba.dev`. Copy it.
+5. Store it for the live app (same terminal setup as step 3, with the key on your clipboard):
+   ```sh
+   pbpaste | gcloud secrets create RESEND_API_KEY --data-file=-
+   gcloud secrets add-iam-policy-binding RESEND_API_KEY \
+     --member="serviceAccount:cucina-run@$PROJECT_ID.iam.gserviceaccount.com" --role=roles/secretmanager.secretAccessor
+   ```
+6. GitHub → **Settings → Secrets and variables → Actions → Variables**: add `OWNER_EMAIL` = the email you'll sign in with.
+7. Push to `main` (or re-run Deploy). Then go to https://kitchen.jmalerba.dev/signin, enter that email, and click the link. You're the owner; invite family from your name menu → **Who can add recipes**.
+
+**Check:** the sign-in email arrives within a minute (look in spam the first time), and the header shows your name.
+
+Locally, leave `RESEND_API_KEY` empty in `.env`: links are printed in the terminal running `npm run dev`.
+
 ---
 
 ## Good to know
@@ -194,4 +215,7 @@ prints `x-robots-tag: noindex, nofollow`.
 | Deploy fails at "Run database migrations" | `DATABASE_URL` GitHub secret missing or wrong, or the `drizzle/` folder wasn't committed |
 | Cloud Run says the container failed to start | Check Cloud Run → Logs. Usually `DATABASE_URL is not set` (secret not granted to `cucina-run`) |
 | Page loads but says the database isn't reachable | The Secret Manager value is wrong; add a new version with `gcloud secrets versions add DATABASE_URL --data-file=-` and redeploy |
+| Deploy fails with a secret "not found" error for RESEND_API_KEY | Step 8.5 not done yet: create the secret, then re-run Deploy |
+| Sign-in email never arrives | Resend dashboard → Emails shows each send and why it failed; usually the domain isn't verified yet |
+| "Request blocked: it did not come from this site" | The page was opened from a different address (e.g. the .web.app or .run.app URL). Use kitchen.jmalerba.dev |
 | Custom domain stuck on "pending" | A Cloudflare record is proxied (orange cloud) or doesn't match what Firebase asked for |

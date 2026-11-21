@@ -1,5 +1,7 @@
 // Imported first by server/index.ts so .env is loaded before anything reads
 // process.env. On Cloud Run there is no .env; settings come from the service.
+import { SITE_NAME, SITE_URL } from '../shared/site.js';
+
 try {
   process.loadEnvFile();
 } catch {
@@ -14,8 +16,25 @@ function required(name: string): string {
   return value;
 }
 
+const isProduction = process.env.NODE_ENV === 'production';
+const appUrl = (process.env.APP_URL ?? (isProduction ? SITE_URL : 'http://localhost:5173')).replace(/\/$/, '');
+
 export const env = {
   port: Number(process.env.PORT ?? 8080),
-  isProduction: process.env.NODE_ENV === 'production',
+  isProduction,
   databaseUrl: required('DATABASE_URL'),
+
+  // Where sign-in links point. Production: the real site. Dev: the Vite server.
+  appUrl,
+  // Browsers' Origin header must be one of these for any request that changes data.
+  allowedOrigins: new Set(
+    [appUrl, SITE_URL, ...(process.env.EXTRA_ORIGINS ?? '').split(',')].map((o) => o.trim().replace(/\/$/, '')).filter(Boolean),
+  ),
+
+  // The first person to sign in with this email becomes the owner (only while there is no owner).
+  ownerEmail: (process.env.OWNER_EMAIL ?? '').trim().toLowerCase() || null,
+
+  // Email: without RESEND_API_KEY, emails are printed to the terminal instead of sent.
+  resendApiKey: process.env.RESEND_API_KEY || null,
+  emailFrom: process.env.EMAIL_FROM || `${SITE_NAME} <noreply@jmalerba.dev>`,
 };

@@ -40,3 +40,21 @@ export function useDebounced<T>(value: T, ms = 250): T {
   }, [value, ms]);
   return debounced;
 }
+
+export type SendResult<T> = { ok: true; data: T } | { ok: false; status: number; error: string };
+
+/** POST/PATCH/DELETE JSON to the API. Never throws; errors come back as { ok: false }. */
+export async function send<T = unknown>(url: string, method: 'POST' | 'PATCH' | 'DELETE', body?: unknown): Promise<SendResult<T>> {
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false, status: res.status, error: (data as { error?: string }).error ?? `The server answered ${res.status}` };
+    return { ok: true, data: data as T };
+  } catch {
+    return { ok: false, status: 0, error: "Couldn't reach the server. Check your connection." };
+  }
+}

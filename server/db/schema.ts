@@ -64,6 +64,7 @@ export const recipes = pgTable(
 
     photoUrl: text('photo_url'), // photo uploads arrive in milestone 4
     parentRecipeId: integer('parent_recipe_id'), // "variation of" (milestone 5)
+    addedByUserId: integer('added_by_user_id').references(() => users.id, { onDelete: 'set null' }),
 
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(), // = "date added"
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -149,6 +150,72 @@ export const cookLogs = pgTable(
   (t) => [index('cook_logs_recipe_idx').on(t.recipeId)],
 );
 
+// ---------- sign-in (milestone 3) ----------
+
+export const userRole = pgEnum('user_role', ['owner', 'editor', 'contributor']);
+
+// Invited family who can sign in. Never hard-deleted: removing someone sets
+// removedAt, so their recipes and cook logs stay credited to them.
+export const users = pgTable(
+  'users',
+  {
+    id: serial('id').primaryKey(),
+    email: text('email').notNull(), // stored lowercase
+    name: text('name').notNull(),
+    role: userRole('role').notNull(),
+    personId: integer('person_id').references(() => people.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    lastSeenAt: timestamp('last_seen_at', { withTimezone: true }),
+    removedAt: timestamp('removed_at', { withTimezone: true }),
+  },
+  (t) => [uniqueIndex('users_email_idx').on(t.email)],
+);
+
+// Someone the owner has invited who hasn't signed in yet.
+export const invites = pgTable(
+  'invites',
+  {
+    id: serial('id').primaryKey(),
+    email: text('email').notNull(),
+    name: text('name').notNull(),
+    role: userRole('role').notNull(),
+    invitedByUserId: integer('invited_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    lastSentAt: timestamp('last_sent_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('invites_email_idx').on(t.email)],
+);
+
+// One-time sign-in links. Only a SHA-256 hash of the token is stored.
+export const loginTokens = pgTable(
+  'login_tokens',
+  {
+    id: serial('id').primaryKey(),
+    email: text('email').notNull(),
+    tokenHash: text('token_hash').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    usedAt: timestamp('used_at', { withTimezone: true }),
+  },
+  (t) => [uniqueIndex('login_tokens_hash_idx').on(t.tokenHash), index('login_tokens_email_idx').on(t.email)],
+);
+
+// Signed-in browsers. The cookie holds a random token; the table holds its hash.
+export const sessions = pgTable(
+  'sessions',
+  {
+    tokenHash: text('token_hash').primaryKey(),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull().defaultNow(),
+    userAgent: text('user_agent'),
+  },
+  (t) => [index('sessions_user_idx').on(t.userId)],
+);
+
 // Relations power db.query.* lookups (the recipe page loads everything in one call).
 export const peopleRelations = relations(people, ({ many }) => ({
   recipes: many(recipes),
@@ -157,6 +224,7 @@ export const peopleRelations = relations(people, ({ many }) => ({
 
 export const recipesRelations = relations(recipes, ({ one, many }) => ({
   sourcePerson: one(people, { fields: [recipes.sourcePersonId], references: [people.id] }),
+  addedBy: one(users, { fields: [recipes.addedByUserId], references: [users.id] }),
   ingredients: many(recipeIngredients),
   steps: many(recipeSteps),
   tags: many(recipeTags),
@@ -183,4 +251,13 @@ export const recipeTagsRelations = relations(recipeTags, ({ one }) => ({
 export const cookLogsRelations = relations(cookLogs, ({ one }) => ({
   recipe: one(recipes, { fields: [cookLogs.recipeId], references: [recipes.id] }),
   person: one(people, { fields: [cookLogs.personId], references: [people.id] }),
+}));
+
+export const usersRelations = relations(users, ({ one, many }) => ({
+  person: one(people, { fields: [users.personId], references: [people.id] }),
+  sessions: many(sessions),
+}));
+
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+  user: one(users, { fields: [sessions.userId], references: [users.id] }),
 }));

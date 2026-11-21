@@ -6,6 +6,10 @@ import express, { type NextFunction, type Request, type Response } from 'express
 import { securityHeaders } from './middleware/securityHeaders.js';
 import { healthRouter } from './routes/health.js';
 import { recipesRouter } from './routes/recipes.js';
+import { authRouter } from './routes/auth.js';
+import { adminRouter } from './routes/admin.js';
+import { loadUser } from './auth/session.js';
+import { originCheck } from './middleware/originCheck.js';
 import { pool } from './db/client.js';
 import { SITE_NAME } from '../shared/site.js';
 
@@ -17,8 +21,16 @@ app.use(securityHeaders);
 app.use(express.json({ limit: '1mb' }));
 
 // API
+app.use('/api', (_req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store'); // never cache API answers (they can depend on who's signed in)
+  next();
+});
+app.use('/api', originCheck(env.allowedOrigins));
+app.use('/api', loadUser);
 app.use('/api', healthRouter);
+app.use('/api', authRouter);
 app.use('/api', recipesRouter);
+app.use('/api', adminRouter);
 app.use('/api', (_req, res) => {
   res.status(404).json({ error: 'Not found' });
 });

@@ -783,6 +783,230 @@ select {
   margin-top: 6px;
 }
 
+/* ---------- sign-in ---------- */
+.signin-link {
+  padding: 11px 14px;
+  border: 1px solid var(--ink);
+  border-radius: 8px;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.account {
+  position: relative;
+}
+.account-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 4px 10px 4px 4px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: var(--surface);
+  cursor: pointer;
+}
+.avatar-sm {
+  width: 34px;
+  height: 34px;
+  font-size: 13px;
+}
+.account-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+@media (max-width: 520px) {
+  .account-name {
+    display: none;
+  }
+}
+.menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 20;
+  min-width: 220px;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.12);
+}
+.menu-meta {
+  margin: 4px 8px 8px;
+}
+.menu button {
+  display: block;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.menu button:hover,
+.menu button:focus-visible {
+  background: var(--chip);
+}
+
+.auth {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  padding-top: 56px;
+}
+.auth h1 {
+  font-weight: 800;
+  font-size: clamp(30px, 6vw, 40px);
+  letter-spacing: -0.02em;
+}
+.auth p {
+  margin: 0;
+}
+.stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  max-width: 420px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+.field input {
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 16px;
+}
+.field input::placeholder {
+  color: var(--ink-muted);
+}
+
+/* ---------- people (owner) ---------- */
+.people-page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 28px clamp(16px, 4vw, 36px) 56px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  align-items: flex-start;
+}
+.people-main {
+  flex: 999 1 520px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.people-main h1 {
+  font-weight: 800;
+  font-size: clamp(28px, 5vw, 36px);
+  letter-spacing: -0.02em;
+}
+.people-main > div > p {
+  margin: 6px 0 0;
+}
+.people-aside {
+  flex: 1 1 280px;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.invite-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 14px;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.invite-form .field {
+  width: auto;
+  flex: 1 1 140px;
+}
+.invite-form .field.grow {
+  flex: 2 1 220px;
+}
+.invite-form .select {
+  height: 44px;
+}
+.invite-form .full {
+  flex-basis: 100%;
+  margin: 0;
+}
+.people-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.person-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+}
+.person-row + .person-row {
+  border-top: 1px solid var(--line-soft);
+}
+.person-info {
+  flex: 1 1 200px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.avatar-pending {
+  background: var(--chip);
+  color: var(--ink-muted);
+}
+.pill {
+  padding: 5px 9px;
+  border-radius: 6px;
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+  font-size: 11px;
+}
+.warn-text {
+  color: var(--accent);
+}
+.explain {
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+.explain h2 {
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+.explain ul {
+  margin: 0;
+  padding-left: 18px;
+  line-height: 1.8;
+}
+.ruled-green {
+  background: var(--surface);
+  border-top: 4px solid var(--brand);
+}
+
 /* ---------- print: one recipe as a card ---------- */
 @media print {
   :root {
