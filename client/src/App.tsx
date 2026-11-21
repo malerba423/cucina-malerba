@@ -1,64 +1,67 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { SITE_NAME } from '../../shared/site';
+import { Link, RouterProvider, useRouter } from './router';
 import { useTheme } from './theme';
-
-type Health =
-  | { state: 'checking' }
-  | { state: 'ok'; dbMs: number }
-  | { state: 'down' };
+import { HomePage } from './pages/HomePage';
+import { RecipePage } from './pages/RecipePage';
+import { NotFoundPage } from './pages/NotFoundPage';
 
 export function App() {
-  const { theme, toggle } = useTheme();
-  const [health, setHealth] = useState<Health>({ state: 'checking' });
+  return (
+    <RouterProvider>
+      <Shell />
+    </RouterProvider>
+  );
+}
 
+function Shell() {
+  const { pathname } = useRouter();
+  const recipeMatch = /^\/recipes\/([^/]+)\/?$/.exec(pathname);
+
+  let page;
+  if (pathname === '/') page = <HomePage />;
+  else if (recipeMatch) page = <RecipePage slug={decodeURIComponent(recipeMatch[1])} />;
+  else page = <NotFoundPage />;
+
+  const isRecipe = recipeMatch != null;
   useEffect(() => {
-    document.title = SITE_NAME;
-    fetch('/api/health')
-      .then(async (r) => {
-        const body = await r.json();
-        setHealth(r.ok && body.ok ? { state: 'ok', dbMs: body.dbMs } : { state: 'down' });
-      })
-      .catch(() => setHealth({ state: 'down' }));
-  }, []);
+    if (!isRecipe) document.title = SITE_NAME; // the recipe page sets its own title
+  }, [isRecipe, pathname]);
 
   return (
     <div className="page">
-      <header className="topbar">
-        <div className="logo">
-          {SITE_NAME.toLowerCase()}
-          <span className="logo-dot">.</span>
-        </div>
-        <button
-          type="button"
-          className="icon-button"
-          onClick={toggle}
-          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
-        >
-          {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-        </button>
-      </header>
-
-      <main className="hero">
-        <p className="eyebrow">MALERBA FAMILY RECIPES · COMING SOON</p>
-        <h1>What are we cooking?</h1>
-        <p className="lead">
-          The kitchen is being set up. Soon this will hold recipes from family, from friends, and
-          from everywhere else we've found them.
-        </p>
-
-        <div className="card" role="status">
-          <span className="card-label">STATUS</span>
-          {health.state === 'checking' && <span>Checking the kitchen…</span>}
-          {health.state === 'ok' && (
-            <span>
-              Server and database are up <span className="muted">({health.dbMs} ms)</span>
-            </span>
-          )}
-          {health.state === 'down' && <span className="warn">Server is up, database isn't reachable</span>}
-        </div>
-      </main>
+      <a className="skip-link" href="#main">
+        Skip to content
+      </a>
+      <Header />
+      <div id="main">{page}</div>
     </div>
+  );
+}
+
+function Header() {
+  const { theme, toggle } = useTheme();
+  return (
+    <header className="topbar">
+      <Link to="/" className="logo">
+        {SITE_NAME.toLowerCase()}
+        <span className="logo-dot">.</span>
+      </Link>
+      <nav className="topnav" aria-label="Main">
+        <Link to="/" className="topnav-link is-active">
+          Browse
+        </Link>
+      </nav>
+      <button
+        type="button"
+        className="icon-button"
+        onClick={toggle}
+        aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+      >
+        {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+      </button>
+    </header>
   );
 }
 

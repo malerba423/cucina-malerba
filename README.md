@@ -2,7 +2,7 @@
 
 A family recipe box at **[kitchen.jmalerba.dev](https://kitchen.jmalerba.dev)**. Anyone can browse recipes, cook from them and keep a shopping list on their own device. Only invited family can add or change recipes.
 
-> Status: milestone 1 (skeleton). The live site is a hello-world page that checks the server and database are connected.
+> Status: milestone 2. Read-only browsing: home page with search and filters, recipe pages with scaling and US/metric units.
 
 ## Stack
 
@@ -22,6 +22,7 @@ cp .env.example .env
 npm run db:up          # starts Postgres in Docker
 npm run db:generate    # first time only: creates the migration files in drizzle/
 npm run db:migrate
+npm run db:seed       # optional: 6 sample recipes (remove with: npm run db:seed -- --remove)
 npm run dev            # API on :8080, web app on http://localhost:5173
 ```
 
@@ -40,6 +41,7 @@ To try the production container locally: `docker compose --profile full up --bui
 | `npm test` | Runs Vitest |
 | `npm run db:generate` | Creates a migration from changes to `server/db/schema.ts` |
 | `npm run db:migrate` | Applies pending migrations to `DATABASE_URL` |
+| `npm run db:seed` | Adds the sample recipes; `npm run db:seed -- --remove` deletes them |
 | `npm run db:studio` | Opens Drizzle Studio to browse the database |
 
 ## Deploying
