@@ -68,6 +68,7 @@ export type RecipeDetail = {
   cookMinutes: number | null;
   totalMinutes: number | null;
   photoUrl: string | null;
+  addedBy: { id: number; name: string } | null;
   createdAt: string;
   updatedAt: string;
   tags: string[];

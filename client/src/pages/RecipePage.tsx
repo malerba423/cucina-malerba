@@ -4,6 +4,8 @@ import type { IngredientLine, RecipeDetail } from '../../../shared/types';
 import { SOURCE_LABELS } from '../../../shared/types';
 import { formatMinutes, formatQuantity, formatTimer, presentIngredient, UNIT_SYSTEMS, type UnitSystem } from '../../../shared/units';
 import { useApi } from '../api';
+import { useAuth } from '../auth';
+import { canEditRecipe } from '../../../shared/auth';
 import { longDate, tintFor } from '../format';
 import { Link } from '../router';
 import { NotFoundPage } from './NotFoundPage';
@@ -36,6 +38,8 @@ export function RecipePage({ slug }: { slug: string }) {
 }
 
 function Recipe({ recipe }: { recipe: RecipeDetail }) {
+  const { user } = useAuth();
+  const canEdit = canEditRecipe(user, recipe.addedBy?.id ?? null);
   const base = recipe.servings ?? null;
   const [amount, setAmount] = useState<number>(base ?? 1); // servings, or a multiplier when servings is unknown
   const [system, setSystem] = useState<UnitSystem>(() => {
@@ -96,6 +100,7 @@ function Recipe({ recipe }: { recipe: RecipeDetail }) {
             </div>
             <div>
               <span className="mono small muted">ADDED </span>
+              {recipe.addedBy ? `by ${recipe.addedBy.name}, ` : ''}
               {longDate(recipe.createdAt)}
             </div>
           </div>
@@ -115,6 +120,11 @@ function Recipe({ recipe }: { recipe: RecipeDetail }) {
             <button type="button" className="button" onClick={() => window.print()}>
               Print card
             </button>
+            {canEdit && (
+              <Link to={`/recipes/${encodeURIComponent(recipe.slug)}/edit`} className="button">
+                Edit
+              </Link>
+            )}
           </div>
         </div>
       </section>

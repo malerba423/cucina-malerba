@@ -6,11 +6,12 @@ export type ApiState<T> =
   | { status: 'not-found' }
   | { status: 'error'; message: string };
 
-/** Fetches JSON from the API and re-fetches when `url` changes. Keeps old data while loading. */
-export function useApi<T>(url: string): ApiState<T> {
+/** Fetches JSON from the API and re-fetches when `url` changes. Keeps old data while loading. Pass null to skip. */
+export function useApi<T>(url: string | null): ApiState<T> {
   const [state, setState] = useState<ApiState<T>>({ status: 'loading' });
 
   useEffect(() => {
+    if (!url) return;
     const controller = new AbortController();
     setState((prev) => ({ status: 'loading', data: 'data' in prev ? prev.data : undefined }));
 
@@ -41,10 +42,10 @@ export function useDebounced<T>(value: T, ms = 250): T {
   return debounced;
 }
 
-export type SendResult<T> = { ok: true; data: T } | { ok: false; status: number; error: string };
+export type SendResult<T> = { ok: true; data: T } | { ok: false; status: number; error: string; fields?: Record<string, string> };
 
 /** POST/PATCH/DELETE JSON to the API. Never throws; errors come back as { ok: false }. */
-export async function send<T = unknown>(url: string, method: 'POST' | 'PATCH' | 'DELETE', body?: unknown): Promise<SendResult<T>> {
+export async function send<T = unknown>(url: string, method: 'POST' | 'PUT' | 'PATCH' | 'DELETE', body?: unknown): Promise<SendResult<T>> {
   try {
     const res = await fetch(url, {
       method,
@@ -52,7 +53,10 @@ export async function send<T = unknown>(url: string, method: 'POST' | 'PATCH' | 
       body: body === undefined ? undefined : JSON.stringify(body),
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) return { ok: false, status: res.status, error: (data as { error?: string }).error ?? `The server answered ${res.status}` };
+    if (!res.ok) {
+      const err = data as { error?: string; fields?: Record<string, string> };
+      return { ok: false, status: res.status, error: err.error ?? `The server answered ${res.status}`, fields: err.fields };
+    }
     return { ok: true, data: data as T };
   } catch {
     return { ok: false, status: 0, error: "Couldn't reach the server. Check your connection." };

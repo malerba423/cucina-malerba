@@ -151,6 +151,7 @@ recipesRouter.get('/recipes/:slug', async (req, res) => {
     where: eq(recipes.slug, req.params.slug),
     with: {
       sourcePerson: true,
+      addedBy: { columns: { id: true, name: true } },
       ingredients: { orderBy: (i, { asc }) => [asc(i.position)] },
       steps: { orderBy: (s, { asc }) => [asc(s.position)] },
       tags: { with: { tag: true } },
@@ -179,6 +180,7 @@ recipesRouter.get('/recipes/:slug', async (req, res) => {
     cookMinutes: recipe.cookMinutes,
     totalMinutes: recipe.totalMinutes,
     photoUrl: recipe.photoUrl,
+    addedBy: recipe.addedBy ? { id: recipe.addedBy.id, name: recipe.addedBy.name } : null,
     createdAt: recipe.createdAt.toISOString(),
     updatedAt: recipe.updatedAt.toISOString(),
     tags: recipe.tags.map((t) => t.tag.name).sort(),

@@ -199,6 +199,32 @@ Locally, leave `RESEND_API_KEY` empty in `.env`: links are printed in the termin
 
 ---
 
+## 9. Recipe photos (Cloud Storage) — milestone 4
+
+Photos are resized in the browser (longest side 1600 px) before upload, so each one is a few hundred KB. They live in a public-read bucket (anyone can view a photo; only the app can add or delete one). Do this **before** pushing milestone 4.
+
+1. In the same terminal setup as step 3 (`PROJECT_ID` set):
+   ```sh
+   BUCKET=$PROJECT_ID-photos
+   gcloud storage buckets create gs://$BUCKET --location=us-west1 --uniform-bucket-level-access
+   gcloud storage buckets add-iam-policy-binding gs://$BUCKET --member=allUsers --role=roles/storage.objectViewer
+   gcloud storage buckets add-iam-policy-binding gs://$BUCKET --member="serviceAccount:cucina-run@$PROJECT_ID.iam.gserviceaccount.com" --role=roles/storage.objectAdmin
+   echo $BUCKET
+   ```
+   If the `allUsers` line fails with an organization policy error, your account has "public access prevention" on; turn it off for this bucket in Console → Cloud Storage → the bucket → Permissions, then run that line again.
+2. GitHub → **Settings → Secrets and variables → Actions → Variables**: add `GCS_BUCKET` = the name printed above (no `gs://`).
+3. In `.github/workflows/deploy.yml`, the deploy step's `--set-env-vars` line becomes:
+   ```yaml
+   --set-env-vars "OWNER_EMAIL=${{ vars.OWNER_EMAIL }},GCS_BUCKET=${{ vars.GCS_BUCKET }}"
+   ```
+4. Push to `main`.
+
+**Check:** add a recipe with a photo on kitchen.jmalerba.dev; the photo's address starts with `https://storage.googleapis.com/`.
+
+Locally, leave `GCS_BUCKET` empty in `.env`: photos are saved in `.uploads/` (git-ignored) and served at `/media`.
+
+---
+
 ## Good to know
 
 - **Cookies:** Firebase Hosting forwards only a cookie named `__session` to Cloud Run and drops the rest. The sign-in work in milestone 3 must name its session cookie `__session`.
@@ -217,5 +243,8 @@ Locally, leave `RESEND_API_KEY` empty in `.env`: links are printed in the termin
 | Page loads but says the database isn't reachable | The Secret Manager value is wrong; add a new version with `gcloud secrets versions add DATABASE_URL --data-file=-` and redeploy |
 | Deploy fails with a secret "not found" error for RESEND_API_KEY | Step 8.5 not done yet: create the secret, then re-run Deploy |
 | Sign-in email never arrives | Resend dashboard → Emails shows each send and why it failed; usually the domain isn't verified yet |
+| Photo upload fails on the live site (Cloud Run logs show a storage error) | `cucina-run` lacks `roles/storage.objectAdmin` on the bucket (step 9) |
+| Photos work at first, then vanish a while later | `GCS_BUCKET` isn't reaching Cloud Run (GitHub variable or the deploy.yml edit in step 9), so photos were saved inside the container |
+| Photos upload but show as broken images | The `allUsers` viewer binding in step 9 is missing |
 | "Request blocked: it did not come from this site" | The page was opened from a different address (e.g. the .web.app or .run.app URL). Use kitchen.jmalerba.dev |
 | Custom domain stuck on "pending" | A Cloudflare record is proxied (orange cloud) or doesn't match what Firebase asked for |

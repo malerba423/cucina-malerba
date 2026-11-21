@@ -9,3 +9,6 @@ coverage
 .env
 .env.*
 !.env.example
+
+# local photo uploads (milestone 4)
+.uploads/

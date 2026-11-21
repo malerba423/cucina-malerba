@@ -8,6 +8,8 @@ import { healthRouter } from './routes/health.js';
 import { recipesRouter } from './routes/recipes.js';
 import { authRouter } from './routes/auth.js';
 import { adminRouter } from './routes/admin.js';
+import { recipeWriteRouter } from './routes/recipeWrite.js';
+import { LOCAL_MEDIA_PATH, LOCAL_UPLOAD_DIR } from './storage.js';
 import { loadUser } from './auth/session.js';
 import { originCheck } from './middleware/originCheck.js';
 import { pool } from './db/client.js';
@@ -30,6 +32,7 @@ app.use('/api', loadUser);
 app.use('/api', healthRouter);
 app.use('/api', authRouter);
 app.use('/api', recipesRouter);
+app.use('/api', recipeWriteRouter);
 app.use('/api', adminRouter);
 app.use('/api', (_req, res) => {
   res.status(404).json({ error: 'Not found' });
@@ -39,6 +42,9 @@ app.use('/api', (err: unknown, _req: Request, res: Response, _next: NextFunction
   console.error(err);
   res.status(500).json({ error: 'Something went wrong' });
 });
+
+// Local photo uploads (only when no Cloud Storage bucket is configured).
+if (!env.gcsBucket) app.use(LOCAL_MEDIA_PATH, express.static(LOCAL_UPLOAD_DIR, { maxAge: '1h' }));
 
 // Built React app (production). In dev, Vite serves the client on :5173.
 // Compiled, this file is dist/server/index.js, so the client is at dist/client.

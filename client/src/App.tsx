@@ -11,6 +11,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 import { SignInPage } from './pages/SignInPage';
 import { VerifyPage } from './pages/VerifyPage';
 import { PeoplePage } from './pages/PeoplePage';
+import { EditRecipePage } from './pages/EditRecipePage';
 
 export function App() {
   return (
@@ -24,10 +25,13 @@ export function App() {
 
 function Shell() {
   const { pathname } = useRouter();
-  const recipeMatch = /^\/recipes\/([^/]+)\/?$/.exec(pathname);
+  const editMatch = /^\/recipes\/([^/]+)\/edit\/?$/.exec(pathname);
+  const recipeMatch = pathname === '/recipes/new' ? null : /^\/recipes\/([^/]+)\/?$/.exec(pathname);
 
   let page;
   if (pathname === '/') page = <HomePage />;
+  else if (pathname === '/recipes/new') page = <EditRecipePage />;
+  else if (editMatch) page = <EditRecipePage slug={decodeURIComponent(editMatch[1])} />;
   else if (recipeMatch) page = <RecipePage slug={decodeURIComponent(recipeMatch[1])} />;
   else if (pathname === '/signin') page = <SignInPage />;
   else if (pathname === '/auth/verify') page = <VerifyPage />;
@@ -108,6 +112,11 @@ function AccountArea() {
   }
 
   return (
+    <>
+    <Link to="/recipes/new" className="button button-primary add-button" aria-label="Add recipe">
+      <span aria-hidden="true">+</span>
+      <span className="add-label"> Add recipe</span>
+    </Link>
     <div className="account" ref={ref}>
       <button type="button" className="account-button" aria-expanded={open} aria-haspopup="menu" onClick={() => setOpen((o) => !o)}>
         <span className="avatar avatar-sm" aria-hidden="true">
@@ -148,6 +157,7 @@ function AccountArea() {
         </div>
       )}
     </div>
+    </>
   );
 }
 

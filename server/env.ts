@@ -36,5 +36,8 @@ export const env = {
 
   // Email: without RESEND_API_KEY, emails are printed to the terminal instead of sent.
   resendApiKey: process.env.RESEND_API_KEY || null,
+
+  // Photos: a Cloud Storage bucket in production; without it, a local .uploads/ folder.
+  gcsBucket: process.env.GCS_BUCKET || null,
   emailFrom: process.env.EMAIL_FROM || `${SITE_NAME} <noreply@jmalerba.dev>`,
 };
