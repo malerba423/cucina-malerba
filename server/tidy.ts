@@ -8,7 +8,7 @@ import { cleanResult, type TidyRequest, type TidyResult } from '../shared/tidy.j
 
 const API_URL = 'https://api.anthropic.com/v1/messages';
 
-const SYSTEM = `You tidy up recipes for a family recipe box. You get a recipe someone pasted or imported: it may be a social media caption, a copied web page or rough notes, with ingredients and steps jumbled together.
+const SYSTEM = `You tidy up recipes for a family cookbook. You get a recipe someone pasted or imported: it may be a social media caption, a copied web page or rough notes, with ingredients and steps jumbled together.
 
 Rewrite it with the save_recipe tool, following these rules:
 - Keep the recipe exactly as written: the same ingredients, amounts, units, temperatures and times. Never invent, remove, convert or "improve" anything that's part of the recipe.

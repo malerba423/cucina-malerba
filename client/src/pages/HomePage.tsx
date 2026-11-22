@@ -13,7 +13,8 @@ import {
 } from '../../../shared/types';
 import { formatMinutes } from '../../../shared/units';
 import { useApi, useDebounced } from '../api';
-import { initials, KIND_LABEL, shortDate, stars, tintFor } from '../format';
+import { firstName, initials, KIND_LABEL, possessive, shortDate, stars, tintFor } from '../format';
+import { useAuth } from '../auth';
 import { Link, useRouter } from '../router';
 
 const FIELD_LABELS: Record<SearchField, string> = { any: 'Anything', name: 'Name', ingredient: 'Ingredient', source: 'Source' };
@@ -31,6 +32,7 @@ function oneOf<T extends string>(value: string | null, allowed: readonly T[], fa
 }
 
 export function HomePage() {
+  const { user } = useAuth();
   const { search, navigate } = useRouter();
 
   // Filters live in the URL, so "back" from a recipe returns to the same view
@@ -49,7 +51,7 @@ export function HomePage() {
   const [text, setText] = useState(urlQuery);
   const debounced = useDebounced(text.trim(), 250);
 
-  // Back/forward changes the URL under us: bring the box in line with it.
+  // Back/forward changes the URL under us: bring the search box in line with it.
   useEffect(() => {
     if (urlQuery !== text.trim()) setText(urlQuery);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -104,7 +106,14 @@ export function HomePage() {
   return (
     <>
       <section className="hero">
-        <h1>What are we cooking?</h1>
+        {user ? (
+          <div className="hero-greeting">
+            <h1>Welcome back, {firstName(user.name)}.</h1>
+            <p className="hero-sub">What's cooking today?</p>
+          </div>
+        ) : (
+          <h1>Welcome to the family cookbook</h1>
+        )}
         <div className="hero-links">
           <Link to="/fridge" className="fridge-link">
             <span className="mono small">FRIDGE MODE</span> What can I make with what I have? →
@@ -134,6 +143,19 @@ export function HomePage() {
             ))}
           </div>
         </form>
+              {browseData && browseData.people.length > 0 && (
+          <nav className="family-row" aria-label="Recipes by family member">
+            <span className="mono small muted">FROM THE FAMILY</span>
+            {browseData.people.slice(0, 8).map((p) => {
+              const active = person === String(p.id);
+              return (
+                <button key={p.id} type="button" className="family-pill" aria-pressed={active} onClick={() => update({ person: active ? null : String(p.id) })}>
+                  {possessive(p.name)} recipes <span className="chip-count">{p.count}</span>
+                </button>
+              );
+            })}
+          </nav>
+        )}
       </section>
 
       <div className="browse">
@@ -268,7 +290,7 @@ export function HomePage() {
                   </button>
                 </>
               ) : (
-                'The box is empty so far. Recipes will show up here as family adds them.'
+                'The cookbook is empty so far. Recipes will show up here as the family adds them.'
               )}
             </div>
           )}
@@ -307,6 +329,8 @@ export function HomePage() {
 
 export function RecipeCardView({ recipe, children }: { recipe: RecipeCard; children?: ReactNode }) {
   const made = recipe.madeCount ? `MADE ${recipe.madeCount}×` : 'NOT MADE YET';
+  // Family recipes lead with whose they are: "Mom’s".
+  const family = !!recipe.source && (recipe.sourceType === 'person' || recipe.sourceType === 'original');
   return (
     <article className="card">
       <Link to={`/recipes/${encodeURIComponent(recipe.slug)}`} className="card-link">
@@ -318,8 +342,9 @@ export function RecipeCardView({ recipe, children }: { recipe: RecipeCard; child
           {recipe.avgRating != null && <span className="badge">{stars(recipe.avgRating)}</span>}
         </div>
         <div className="card-body ruled">
+          {family && <p className="card-family">{possessive(recipe.source!)}</p>}
           <h3>{recipe.title}</h3>
-          {recipe.source && (
+          {recipe.source && !family && (
             <p>
               from <strong className="accent">{recipe.source}</strong>
             </p>

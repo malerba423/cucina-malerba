@@ -9,7 +9,7 @@ import { shopping, useShoppingEntries } from '../shoppingList';
 import { useApi } from '../api';
 import { useAuth } from '../auth';
 import { canEditRecipe } from '../../../shared/auth';
-import { longDate, tintFor } from '../format';
+import { longDate, possessive, tintFor } from '../format';
 import { Link, useRouter } from '../router';
 import { CollectionsPicker, MadeItSection, NotesSection } from './RecipeFamily';
 import { NotFoundPage } from './NotFoundPage';
@@ -85,6 +85,13 @@ function Recipe({ recipe, reload }: { recipe: RecipeDetail; reload: () => void }
           {recipe.description && <p className="muted">{recipe.description}</p>}
 
           <div className="source-card ruled">
+            {recipe.sourcePerson && (recipe.sourceType === 'person' || recipe.sourceType === 'original') ? (
+              <div className="family-credit">
+                From <strong>{possessive(recipe.sourcePerson)}</strong> kitchen
+                {recipe.sourceType === 'original' ? ' · an original' : ''}
+                {recipe.sourceNote ? `, ${recipe.sourceNote}` : ''}
+              </div>
+            ) : (
             <div>
               <span className="mono small muted">SOURCE </span>
               {source.url ? (
@@ -96,9 +103,10 @@ function Recipe({ recipe, reload }: { recipe: RecipeDetail; reload: () => void }
               )}
               {recipe.sourceNote ? `, ${recipe.sourceNote}` : ''}
             </div>
+            )}
             <div>
-              <span className="mono small muted">ADDED </span>
-              {recipe.addedBy ? `by ${recipe.addedBy.name}, ` : ''}
+              <span className="mono small muted">{recipe.addedBy ? 'SHARED BY ' : 'ADDED '}</span>
+              {recipe.addedBy ? `${recipe.addedBy.name}, ` : ''}
               {longDate(recipe.createdAt)}
             </div>
           </div>

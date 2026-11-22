@@ -2176,6 +2176,58 @@ select {
   flex: 1;
 }
 
+/* ---------- family feel ---------- */
+.hero-greeting h1 {
+  margin-bottom: 0;
+}
+.hero-sub {
+  margin: 2px 0 0;
+  color: var(--ink-muted);
+  font-family: var(--font-display);
+  font-size: clamp(18px, 2.4vw, 24px);
+}
+.family-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.family-row .mono {
+  margin-right: 4px;
+  letter-spacing: 0.06em;
+}
+.family-pill {
+  height: 34px;
+  padding: 0 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.family-pill:hover {
+  border-color: var(--ink-muted);
+}
+.family-pill[aria-pressed='true'] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--bg);
+}
+.card-family {
+  margin: 0 0 2px;
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+}
+.source-card .family-credit strong {
+  font-family: var(--font-display);
+  font-size: 1.1em;
+}
+
 /* ---------- people (owner) ---------- */
 .people-page {
   max-width: 1120px;

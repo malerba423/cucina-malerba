@@ -8,7 +8,7 @@ import { isRole, looksLikeEmail, normalizeEmail, type PeopleAdminResponse } from
 import { sendInvite } from '../auth/accounts.js';
 import { requireRole } from '../auth/session.js';
 
-// Everything here is owner-only: the "Who can add recipes" screen.
+// Everything here is owner-only: the "The family" screen.
 export const adminRouter = Router();
 adminRouter.use('/admin', requireRole('owner'));
 

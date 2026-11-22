@@ -133,7 +133,7 @@ export function ImportPage() {
           <div className="import-banner">
             {duplicate && (
               <p className="notice notice-warn">
-                This link is already in the box as{' '}
+                This link is already in the cookbook as{' '}
                 <Link to={`/recipes/${encodeURIComponent(duplicate.slug)}`}>{duplicate.title}</Link>. Saving makes a second copy.
               </p>
             )}
@@ -155,7 +155,7 @@ export function ImportPage() {
   return (
     <main className="importer">
       <p className="eyebrow">IMPORT A RECIPE</p>
-      <h1>Bring a recipe into the box</h1>
+      <h1>Bring a recipe into the cookbook</h1>
       <p className="muted">Nothing is saved until you've checked it over.</p>
 
       <div className="segmented import-tabs" role="tablist" aria-label="Import from">

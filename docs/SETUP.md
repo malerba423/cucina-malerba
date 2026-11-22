@@ -191,7 +191,7 @@ Sign-in links go out from `noreply@jmalerba.dev` through [Resend](https://resend
      --member="serviceAccount:cucina-run@$PROJECT_ID.iam.gserviceaccount.com" --role=roles/secretmanager.secretAccessor
    ```
 6. GitHub → **Settings → Secrets and variables → Actions → Variables**: add `OWNER_EMAIL` = the email you'll sign in with.
-7. Push to `main` (or re-run Deploy). Then go to https://recipes.jmalerba.dev/signin, enter that email, and click the link. You're the owner; invite family from your name menu → **Who can add recipes**.
+7. Push to `main` (or re-run Deploy). Then go to https://recipes.jmalerba.dev/signin, enter that email, and click the link. You're the owner; invite family from your name menu → **The family**.
 
 **Check:** the sign-in email arrives within a minute (look in spam the first time), and the header shows your name.
 

@@ -210,7 +210,7 @@ function AccountArea() {
                 navigate('/people');
               }}
             >
-              Who can add recipes
+              Add / Manage People
             </button>
           )}
           <button

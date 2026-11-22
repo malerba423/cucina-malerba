@@ -18,7 +18,7 @@ export type RecipeDraft = {
   prepMinutes: number | null;
   cookMinutes: number | null;
   totalMinutes: number | null;
-  /** A photo on the other site. It's copied into the box only when the recipe is saved. */
+  /** A photo on the other site. (No longer used: imports start without a photo.) */
   imageUrl: string | null;
   tags: string[];
   /** Group headers end in ":", like the form's ingredient box. */

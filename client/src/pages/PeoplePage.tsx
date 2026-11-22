@@ -23,7 +23,7 @@ export function PeoplePage() {
     <main className="people-page">
       <section className="people-main">
         <div>
-          <h1>Who can add recipes</h1>
+          <h1>The family</h1>
           <p className="muted">
             Anyone can browse and cook. Only the people below can add or change recipes. They sign in with a link emailed to
             them, so there are no passwords. Once you add someone they can sign in at <strong>/signin</strong> with that email;

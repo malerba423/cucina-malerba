@@ -1,6 +1,6 @@
 # Cucina Malerba
 
-A family recipe box at **[recipes.jmalerba.dev](https://recipes.jmalerba.dev)**. Anyone can browse recipes, cook from them and keep a shopping list on their own device. Only invited family can add or change recipes.
+The Malerba family cookbook at **[recipes.jmalerba.dev](https://recipes.jmalerba.dev)**. Anyone can browse recipes, cook from them and keep a shopping list on their own device. Only invited family can add or change recipes.
 
 > Status: all milestones done (1–11). For everyone: browsing, forgiving search, fridge mode, cook mode, a shopping list kept on the device, collections, printing (full page or 4×6 card), and an installable home-screen app. Family (three roles) can add, edit and import recipes (including from the phone share sheet), tidy them with AI, log "made it", leave notes, save variations and build collections.
 

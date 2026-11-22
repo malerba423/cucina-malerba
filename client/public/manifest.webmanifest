@@ -1,7 +1,7 @@
 {
   "name": "Cucina Malerba",
   "short_name": "Cucina",
-  "description": "The Malerba family recipe box.",
+  "description": "The Malerba family cookbook.",
   "id": "/",
   "start_url": "/",
   "scope": "/",

@@ -180,7 +180,7 @@ export function FridgePage() {
       ) : data ? (
         data.ready.length + data.close.length + data.more.length === 0 ? (
           <p className="notice">
-            Nothing in the box uses those yet. Try fewer or more general words ("chicken" instead of "chicken thighs"), or{' '}
+            Nothing in the cookbook uses those yet. Try fewer or more general words ("chicken" instead of "chicken thighs"), or{' '}
             <Link to="/">browse everything</Link>.
           </p>
         ) : (
@@ -191,7 +191,7 @@ export function FridgePage() {
           </div>
         )
       ) : (
-        <p className="muted">Checking the box…</p>
+        <p className="muted">Checking the cookbook…</p>
       )}
     </main>
   );

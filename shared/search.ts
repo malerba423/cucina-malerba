@@ -84,7 +84,7 @@ function fieldsFor(doc: SearchDoc, by: SearchField): Field[] {
   return [title, { words: doc.tags.flatMap((t) => words(t)), weight: 6 }, source, ingredients, ingredientText, { words: words(doc.description), weight: 1 }];
 }
 
-/** Every word the box knows, so a finished word ("egg") matches exactly and a half-typed one ("lem") matches as a prefix. */
+/** Every word the cookbook knows, so a finished word ("egg") matches exactly and a half-typed one ("lem") matches as a prefix. */
 export function vocabulary(docs: SearchDoc[]): Set<string> {
   const vocab = new Set<string>();
   for (const d of docs) for (const f of fieldsFor(d, 'any')) for (const w of f.words) vocab.add(w);

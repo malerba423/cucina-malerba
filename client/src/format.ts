@@ -38,3 +38,12 @@ export function initials(name: string): string {
 export function stars(rating: number): string {
   return `★ ${Number.isInteger(rating) ? rating : rating.toFixed(1)}`;
 }
+
+/** "Mom" → "Mom’s", "Chris" → "Chris’". */
+export function possessive(name: string): string {
+  const n = name.trim();
+  return /s$/i.test(n) ? `${n}’` : `${n}’s`;
+}
+
+/** "Joel Malerba" → "Joel". */
+export const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? name;
