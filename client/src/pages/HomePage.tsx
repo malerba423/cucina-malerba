@@ -61,6 +61,21 @@ export function HomePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlQuery]);
 
+  // Drawers and family pills each start a fresh view: picking one clears the
+  // search box and every other filter, so "Clara's" means all of Clara's.
+  const startFresh = (choice: { source?: string; person?: string }) => {
+    setText('');
+    const next = new URLSearchParams();
+    if (choice.person) {
+      next.set('person', choice.person);
+      if (defaultSource !== 'all') next.set('source', 'all'); // not "Clara's within Mine"
+    } else if (choice.source && choice.source !== defaultSource) {
+      next.set('source', choice.source);
+    }
+    const qs = next.toString();
+    navigate(qs ? `/?${qs}` : '/', { replace: true });
+  };
+
   const update = (changes: Record<string, string | null>) => {
     const next = new URLSearchParams(search);
     for (const [k, v] of Object.entries(changes)) {
@@ -158,7 +173,7 @@ export function HomePage() {
             {browseData.people.map((p) => {
               const active = person === String(p.id);
               return (
-                <button key={p.id} type="button" className="family-pill" aria-pressed={active} onClick={() => update({ person: active ? null : String(p.id) })}>
+                <button key={p.id} type="button" className="family-pill" aria-pressed={active} onClick={() => startFresh(active ? {} : { person: String(p.id) })}>
                   {possessive(p.name)} recipes <span className="chip-count">{p.count}</span>
                 </button>
               );
@@ -172,12 +187,12 @@ export function HomePage() {
           <section>
             <h2 className="label">Drawers</h2>
             <div className="drawers">
-              <button type="button" aria-pressed={source === 'all'} onClick={() => update({ source: 'all' })}>
+              <button type="button" aria-pressed={source === 'all'} onClick={() => startFresh({ source: 'all' })}>
                 <span>Everything</span>
                 <span className="mono">{browseData?.total ?? ''}</span>
               </button>
               {user && (
-                <button type="button" aria-pressed={source === 'mine'} onClick={() => update({ source: 'mine' })}>
+                <button type="button" aria-pressed={source === 'mine'} onClick={() => startFresh({ source: 'mine' })}>
                   <span>Mine</span>
                   <span className="mono">{browseData?.mine ?? ''}</span>
                 </button>
@@ -186,7 +201,7 @@ export function HomePage() {
                 const count = browseData?.sources.find((s) => s.sourceType === t)?.count ?? 0;
                 if (!count && t === 'other') return null;
                 return (
-                  <button key={t} type="button" aria-pressed={source === t} onClick={() => update({ source: t })}>
+                  <button key={t} type="button" aria-pressed={source === t} onClick={() => startFresh({ source: t })}>
                     <span>{SOURCE_LABELS[t]}</span>
                     <span className="mono">{count}</span>
                   </button>
