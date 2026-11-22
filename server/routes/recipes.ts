@@ -92,11 +92,19 @@ recipesRouter.get('/recipes', async (req, res) => {
 
 /** Who "Mine" means for a signed-in user: their account, and the person their originals are credited to. */
 async function mineFor(userId: number): Promise<Mine> {
-  const [[u], saved] = await Promise.all([
-    db.select({ personId: users.personId }).from(users).where(eq(users.id, userId)).limit(1),
+  const [[u], saved, family] = await Promise.all([
+    db.select({ personId: users.personId, name: users.name }).from(users).where(eq(users.id, userId)).limit(1),
     db.select({ recipeId: savedRecipes.recipeId }).from(savedRecipes).where(eq(savedRecipes.userId, userId)),
+    familyMembers(),
   ]);
-  return { userId, personId: u?.personId ?? null, savedIds: new Set(saved.map((s) => s.recipeId)) };
+  return {
+    userId,
+    personId: u?.personId ?? null,
+    nameKey: (u?.name ?? '').trim().toLowerCase(),
+    savedIds: new Set(saved.map((s) => s.recipeId)),
+    familyPersonIds: family.personIds,
+    familyNameKeys: family.nameKeys,
+  };
 }
 
 // GET /api/browse: counts for the sidebar drawers, people and tags.

@@ -139,7 +139,11 @@ function Recipe({ recipe, reload }: { recipe: RecipeDetail; reload: () => void }
                 Edit
               </Link>
             )}
-            {user && recipe.addedBy?.id !== user.id && <SaveButton recipe={recipe} onChanged={reload} />}
+            {/* Hidden only on recipes that are already plainly yours: shared by you and not credited to someone else. */}
+            {user &&
+              (recipe.addedBy?.id !== user.id || (recipe.sourcePerson != null && recipe.sourcePerson.trim().toLowerCase() !== user.name.trim().toLowerCase())) && (
+                <SaveButton recipe={recipe} onChanged={reload} />
+              )}
             {user && (
               <Link to={`/recipes/new?variationOf=${encodeURIComponent(recipe.slug)}`} className="button" title="Save your own version, linked to this one">
                 Make a variation

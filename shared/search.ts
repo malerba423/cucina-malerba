@@ -136,16 +136,28 @@ export function scoreDoc(
   return { score, missed };
 }
 
-/** Whose "Mine" this is: their account, the person their originals are credited to, and recipes they've added to their own. */
-export type Mine = { userId: number; personId: number | null; savedIds: Set<number> };
+/** Whose "Mine" this is, and who else counts as family (to tell "my find" from "Mom's recipe I typed in"). */
+export type Mine = {
+  userId: number;
+  personId: number | null;
+  nameKey: string; // lowercased name
+  savedIds: Set<number>;
+  familyPersonIds: Set<number>;
+  familyNameKeys: Set<string>;
+};
 
-/** Shared it, created it, or added it to "my recipes". */
+/**
+ * Mine: recipes credited to me, recipes I've added to "my recipes", and
+ * recipes I shared unless they're credited to another family member (typing
+ * in Mom's lasagna doesn't make it mine; my Instagram finds are).
+ */
 export function isMine(doc: SearchDoc, me: Mine): boolean {
-  return (
-    doc.addedByUserId === me.userId ||
-    (doc.sourceType === 'original' && me.personId != null && doc.personId === me.personId) ||
-    me.savedIds.has(doc.id)
-  );
+  const credited = doc.personId != null;
+  const key = doc.personName.trim().toLowerCase();
+  const creditedToMe = credited && ((me.personId != null && doc.personId === me.personId) || key === me.nameKey);
+  if (creditedToMe || me.savedIds.has(doc.id)) return true;
+  const creditedToOtherFamily = credited && (me.familyPersonIds.has(doc.personId!) || me.familyNameKeys.has(key));
+  return doc.addedByUserId === me.userId && !creditedToOtherFamily;
 }
 
 export function filterDoc(doc: SearchDoc, p: SearchParams): boolean {

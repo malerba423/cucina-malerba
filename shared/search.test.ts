@@ -82,13 +82,17 @@ describe('searchDocs', () => {
     expect(searchDocs(box, params({ q: 'mom dad', by: 'source' })).length).toBe(0);
   });
   it('filters to my recipes', () => {
-    const saved = doc('Mom lemon bars', [], { addedByUserId: 2 });
-    const mine = [doc('Mine A', [], { addedByUserId: 5 }), doc('My original', [], { sourceType: 'original', personId: 9 }), saved, doc('Other', [])];
-    expect(titles(searchDocs(mine, params({ mine: { userId: 5, personId: 9, savedIds: new Set([saved.id]) } })))).toEqual([
-      'Mine A',
-      'My original',
-      'Mom lemon bars',
-    ]);
+    const saved = doc('Mom lemon bars', [], { addedByUserId: 2, personId: 3, personName: 'Mom' });
+    const box = [
+      doc('My Instagram find', [], { addedByUserId: 5, sourceType: 'social' }),
+      doc('My original', [], { sourceType: 'original', personId: 9, personName: 'Joel' }),
+      doc('Mom lasagna I typed in', [], { addedByUserId: 5, personId: 3, personName: 'Mom' }),
+      doc('Danny chili I typed in', [], { addedByUserId: 5, personId: 4, personName: 'Danny' }),
+      saved,
+      doc('Other', []),
+    ];
+    const me = { userId: 5, personId: 9, nameKey: 'joel', savedIds: new Set([saved.id]), familyPersonIds: new Set<number>(), familyNameKeys: new Set(['mom', 'joel']) };
+    expect(titles(searchDocs(box, params({ mine: me })))).toEqual(['My Instagram find', 'My original', 'Danny chili I typed in', 'Mom lemon bars']);
   });
   it('applies tag, person and month filters', () => {
     expect(titles(searchDocs(box, params({ tags: ['weeknight'] })))).toEqual(['Chicken Piccata']);
