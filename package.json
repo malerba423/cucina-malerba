@@ -20,6 +20,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx server/db/seed.ts",
+    "db:family-samples": "tsx server/db/familySamples.ts",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {

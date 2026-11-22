@@ -10,6 +10,7 @@ import { useAuth } from '../auth';
 import { resizePhoto, uploadPhoto } from '../image';
 import { Link, useRouter } from '../router';
 import { NotFoundPage } from './NotFoundPage';
+import { PersonPicker } from '../PersonPicker';
 
 const SOURCE_CHOICES: Record<SourceType, string> = {
   person: 'A person',
@@ -196,6 +197,17 @@ export function RecipeForm({ initial, slug, defaultPerson, eyebrow, cancel, bann
     setDirty(true);
   };
 
+  // "Mine" is credited to whoever is signed in; leaving it clears that name so "A person" starts empty.
+  const chooseSource = (t: SourceType) => {
+    setF((prev) => ({
+      ...prev,
+      sourceType: t,
+      sourcePersonName:
+        t === 'original' ? defaultPerson : prev.sourceType === 'original' && prev.sourcePersonName === defaultPerson ? '' : prev.sourcePersonName,
+    }));
+    setDirty(true);
+  };
+
   useEffect(() => {
     if (!dirty) return;
     const warn = (e: BeforeUnloadEvent) => e.preventDefault();
@@ -374,7 +386,7 @@ export function RecipeForm({ initial, slug, defaultPerson, eyebrow, cancel, bann
               <legend className="label">Where it came from</legend>
               <div className="segmented wrap">
                 {SOURCE_TYPES.map((t) => (
-                  <button key={t} type="button" aria-pressed={f.sourceType === t} onClick={() => set('sourceType', t)}>
+                  <button key={t} type="button" aria-pressed={f.sourceType === t} onClick={() => chooseSource(t)}>
                     {SOURCE_CHOICES[t]}
                   </button>
                 ))}
@@ -552,12 +564,12 @@ function SourceFields({
       return (
         <div className="row">
           <Field label="Who" error={errors.sourcePersonName}>
-            <input list="people-names" value={f.sourcePersonName} onChange={(e) => set('sourcePersonName', e.target.value)} placeholder="Mom, Grandpa Lou…" />
-            <datalist id="people-names">
-              {personNames.map((n) => (
-                <option key={n} value={n} />
-              ))}
-            </datalist>
+            <PersonPicker
+              value={f.sourcePersonName}
+              onChange={(v) => set('sourcePersonName', v)}
+              names={personNames.some((n) => n.toLowerCase() === defaultPerson.toLowerCase()) ? personNames : [...personNames, defaultPerson].sort((a, b) => a.localeCompare(b))}
+              placeholder="Mom, Grandpa Lou…"
+            />
           </Field>
           {note('from a church cookbook, 1987')}
         </div>
@@ -565,14 +577,13 @@ function SourceFields({
     case 'original':
       return (
         <div className="row">
-          <Field label="Whose original">
-            <input list="people-names" value={f.sourcePersonName} onChange={(e) => set('sourcePersonName', e.target.value)} placeholder={defaultPerson} />
-            <datalist id="people-names">
-              {personNames.map((n) => (
-                <option key={n} value={n} />
-              ))}
-            </datalist>
-          </Field>
+          <div className="field">
+            <span className="label">Credited to</span>
+            <p className="credited-to">
+              <strong>{f.sourcePersonName || defaultPerson}</strong>
+              {(f.sourcePersonName || defaultPerson) === defaultPerson ? <span className="muted"> (you)</span> : null}
+            </p>
+          </div>
           {note('riff on a restaurant dish')}
         </div>
       );

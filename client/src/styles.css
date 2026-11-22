@@ -2183,6 +2183,41 @@ select {
   flex: 1;
 }
 
+/* ---------- person picker ---------- */
+.credited-to {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  margin: 0;
+}
+.person-picker {
+  position: relative;
+}
+.person-options {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  max-height: 240px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16);
+}
+.person-options li {
+  padding: 9px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.person-options li.is-active {
+  background: var(--chip);
+}
+
 /* ---------- family feel ---------- */
 .button.is-saved {
   border-color: var(--brand);
