@@ -139,9 +139,6 @@ export function HomePage() {
           <h1>Welcome to the family cookbook</h1>
         )}
         <div className="hero-links">
-          <Link to="/fridge" className="fridge-link">
-            <span className="mono small">FRIDGE MODE</span> What can I make with what I have? →
-          </Link>
           <Link to="/collections" className="fridge-link">
             <span className="mono small">COLLECTIONS</span> Holidays, favorites, standbys →
           </Link>

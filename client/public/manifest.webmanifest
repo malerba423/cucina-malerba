@@ -15,7 +15,6 @@
   ],
   "shortcuts": [
     { "name": "Shopping list", "url": "/shopping", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
-    { "name": "Fridge mode", "url": "/fridge", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
     { "name": "Import a recipe", "url": "/import", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
   ],
   "share_target": {

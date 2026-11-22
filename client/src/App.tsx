@@ -90,9 +90,6 @@ function Header() {
         <Link to="/collections" className={`topnav-link${section === 'collections' ? ' is-active' : ''}`}>
           Collections
         </Link>
-        <Link to="/fridge" className={`topnav-link${section === 'fridge' ? ' is-active' : ''}`}>
-          Fridge
-        </Link>
         {user && (
           <Link to="/import" className={`topnav-link${section === 'import' ? ' is-active' : ''}`}>
             Import
