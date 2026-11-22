@@ -1172,11 +1172,6 @@ select {
   background: var(--warn-bg);
   color: var(--warn-ink);
 }
-.photo-busy {
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--surface);
-}
 
 /* ---------- search extras ---------- */
 .hero-links {

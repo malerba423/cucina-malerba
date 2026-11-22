@@ -38,12 +38,3 @@ export async function uploadPhoto(blob: Blob): Promise<string> {
   return body.url;
 }
 
-/** Copies a photo from another site (through our server, since other sites block cross-site reads), resized like any upload. */
-export async function importPhoto(remoteUrl: string): Promise<string> {
-  const res = await fetch(`/api/import/image?url=${encodeURIComponent(remoteUrl)}`);
-  if (!res.ok) {
-    const body = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(body.error ?? "Couldn't get the page's photo");
-  }
-  return uploadPhoto(await resizePhoto(await res.blob()));
-}

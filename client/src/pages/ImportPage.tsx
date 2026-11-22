@@ -125,7 +125,6 @@ export function ImportPage() {
       <RecipeForm
         key={result.key}
         initial={toForm(draft)}
-        importedPhoto={draft.imageUrl}
         defaultPerson={user.name}
         eyebrow="IMPORTED · CHECK IT OVER"
         startDirty

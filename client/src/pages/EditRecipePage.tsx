@@ -7,7 +7,7 @@ import { SOURCE_TYPES, type RecipeDetail, type SourceType } from '../../../share
 import { formatQuantity, formatTimer } from '../../../shared/units';
 import { send, useApi } from '../api';
 import { useAuth } from '../auth';
-import { importPhoto, resizePhoto, uploadPhoto } from '../image';
+import { resizePhoto, uploadPhoto } from '../image';
 import { Link, useRouter } from '../router';
 import { NotFoundPage } from './NotFoundPage';
 
@@ -162,8 +162,6 @@ type RecipeFormProps = {
   initial: FormState;
   slug?: string;
   defaultPerson: string;
-  /** A photo on the page a recipe was imported from; copied into the box when the recipe is saved. */
-  importedPhoto?: string | null;
   eyebrow?: string;
   /** Replaces the Cancel link (the import page uses it for "Start over"). */
   cancel?: { label: string; onClick: () => void };
@@ -175,11 +173,10 @@ type RecipeFormProps = {
   parentSlug?: string;
 };
 
-export function RecipeForm({ initial, slug, defaultPerson, importedPhoto = null, eyebrow, cancel, banner, startDirty = false, parentSlug }: RecipeFormProps) {
+export function RecipeForm({ initial, slug, defaultPerson, eyebrow, cancel, banner, startDirty = false, parentSlug }: RecipeFormProps) {
   const { navigate } = useRouter();
   const [f, setF] = useState<FormState>(initial);
   const [dirty, setDirty] = useState(startDirty);
-  const [usePagePhoto, setUsePagePhoto] = useState(importedPhoto != null);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -215,7 +212,6 @@ export function RecipeForm({ initial, slug, defaultPerson, importedPhoto = null,
     try {
       const url = await uploadPhoto(await resizePhoto(file));
       set('photoUrl', url);
-      setUsePagePhoto(false);
       setPhotoState({ busy: false, error: null });
     } catch (err) {
       setPhotoState({ busy: false, error: err instanceof Error ? err.message : 'Upload failed' });
@@ -276,23 +272,6 @@ export function RecipeForm({ initial, slug, defaultPerson, importedPhoto = null,
     e.preventDefault();
     setFormError(null);
 
-    let photoUrl = f.photoUrl;
-    if (!photoUrl && usePagePhoto && importedPhoto) {
-      setSaving(true);
-      setPhotoState({ busy: true, error: null });
-      try {
-        photoUrl = await importPhoto(importedPhoto);
-        set('photoUrl', photoUrl);
-        setUsePagePhoto(false);
-        setPhotoState({ busy: false, error: null });
-      } catch (err) {
-        setSaving(false);
-        setPhotoState({ busy: false, error: `${err instanceof Error ? err.message : "Couldn't get the page's photo"}. Skip it or add your own.` });
-        setFormError("The recipe isn't saved yet: the page's photo couldn't be copied.");
-        return;
-      }
-    }
-
     const body: RecipeInput = {
       title: f.title,
       description: f.description || null,
@@ -306,7 +285,7 @@ export function RecipeForm({ initial, slug, defaultPerson, importedPhoto = null,
       prepMinutes: f.prepMinutes === '' ? null : Number(f.prepMinutes),
       cookMinutes: f.cookMinutes === '' ? null : Number(f.cookMinutes),
       totalMinutes: f.totalMinutes === '' ? null : Number(f.totalMinutes),
-      photoUrl,
+      photoUrl: f.photoUrl,
       tags: f.tags.split(',').map((t) => t.trim()).filter(Boolean),
       ingredients: parsed.lines.map((l) => ({
         groupLabel: l.groupLabel,
@@ -373,7 +352,7 @@ export function RecipeForm({ initial, slug, defaultPerson, importedPhoto = null,
         </header>
 
         {banner}
-        {!slug && !importedPhoto && !banner && (
+        {!slug && !banner && (
           <p className="small muted import-hint">
             Found it online? <Link to="/import">Import it from the link</Link> instead of typing it in.
           </p>
@@ -473,23 +452,9 @@ export function RecipeForm({ initial, slug, defaultPerson, importedPhoto = null,
           <aside className="editor-side">
             <div className="field">
               <span className="label">Photo</span>
-              {!f.photoUrl && usePagePhoto && importedPhoto ? (
-                <>
-                  <div className="photo-slot" style={{ backgroundImage: `url(${JSON.stringify(`/api/import/image?url=${encodeURIComponent(importedPhoto)}`)})` }}>
-                    {photoState.busy && <span className="photo-busy small">Copying photo…</span>}
-                  </div>
-                  <span className="small muted">
-                    The page's photo. It's copied into the box when you save.{' '}
-                    <button type="button" className="text-button" onClick={() => setUsePagePhoto(false)}>
-                      Skip it
-                    </button>
-                  </span>
-                </>
-              ) : (
-                <div className="photo-slot" style={f.photoUrl ? { backgroundImage: `url(${JSON.stringify(f.photoUrl)})` } : undefined}>
-                  {!f.photoUrl && <span className="muted small">{photoState.busy ? 'Uploading…' : 'No photo yet'}</span>}
-                </div>
-              )}
+              <div className="photo-slot" style={f.photoUrl ? { backgroundImage: `url(${JSON.stringify(f.photoUrl)})` } : undefined}>
+                {!f.photoUrl && <span className="muted small">{photoState.busy ? 'Uploading…' : 'No photo yet'}</span>}
+              </div>
               <div className="row">
                 <input ref={fileInput} type="file" accept="image/*" className="visually-hidden" id="photo" onChange={(e) => choosePhoto(e.target.files?.[0])} />
                 <label htmlFor="photo" className="button">

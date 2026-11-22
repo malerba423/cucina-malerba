@@ -15,7 +15,6 @@ export const importRouter = Router();
 
 const HOUR = 60 * 60 * 1000;
 const pagesPerUser = createRateLimiter(40, HOUR);
-const imagesPerUser = createRateLimiter(60, HOUR);
 
 function friendly(err: unknown): string {
   if (!(err instanceof FetchError)) return "Something went wrong reading that page.";
@@ -74,41 +73,4 @@ importRouter.post('/import/url', requireRole('contributor'), async (req, res) =>
 
   const body: ImportResult = { ...result, duplicate: dupe ?? null };
   res.json(body);
-});
-
-// GET /api/import/image?url=… : the page's photo, passed through so the browser
-// can resize it and upload it like any other photo (other sites don't allow
-// cross-site reads). Family only, so this can't be used as an open proxy.
-const IMAGE_TYPES: [string, (b: Buffer) => boolean][] = [
-  ['image/jpeg', (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff],
-  ['image/png', (b) => b.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))],
-  ['image/webp', (b) => b.subarray(0, 4).toString('latin1') === 'RIFF' && b.subarray(8, 12).toString('latin1') === 'WEBP'],
-  ['image/gif', (b) => b.subarray(0, 4).toString('latin1') === 'GIF8'],
-  ['image/avif', (b) => b.subarray(4, 12).toString('latin1') === 'ftypavif'],
-];
-
-importRouter.get('/import/image', requireRole('contributor'), async (req, res) => {
-  if (!imagesPerUser.take(String(res.locals.user!.id))) {
-    res.status(429).json({ error: 'Too many photos for now. Try again in a bit.' });
-    return;
-  }
-  const link = parseLink(typeof req.query.url === 'string' ? req.query.url : '');
-  if (!link) {
-    res.status(400).json({ error: 'Missing photo link' });
-    return;
-  }
-  try {
-    const img = await safeFetch(link, { accept: 'image/avif,image/webp,image/png,image/jpeg,image/*;q=0.8', maxBytes: 15 * 1024 * 1024 });
-    const type = IMAGE_TYPES.find(([, test]) => test(img.body))?.[0];
-    if (!type) {
-      res.status(415).json({ error: "The page's photo isn't a kind we can use. Add your own instead." });
-      return;
-    }
-    res.setHeader('Content-Type', type);
-    res.setHeader('Content-Disposition', 'inline');
-    res.setHeader('Cache-Control', 'private, no-store');
-    res.send(img.body);
-  } catch (err) {
-    res.status(422).json({ error: err instanceof FetchError && err.kind === 'too-big' ? "The page's photo is too big." : "Couldn't get the page's photo." });
-  }
 });
