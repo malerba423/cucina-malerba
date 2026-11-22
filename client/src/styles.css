@@ -2177,6 +2177,11 @@ select {
 }
 
 /* ---------- family feel ---------- */
+.button.is-saved {
+  border-color: var(--brand);
+  color: var(--brand);
+  font-weight: 600;
+}
 .hero-greeting h1 {
   margin-bottom: 0;
 }

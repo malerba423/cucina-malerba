@@ -40,6 +40,8 @@ export type BrowseResponse = {
   sources: { sourceType: SourceType; count: number }[];
   people: { id: number; name: string; count: number }[];
   tags: { name: string; count: number }[];
+  /** Signed in only: how many recipes are "mine". */
+  mine: number | null;
 };
 
 /** Fridge mode: recipes you can make now, with a couple of things more, or that at least use what you have. */
@@ -85,6 +87,8 @@ export type RecipeDetail = {
   parent: { slug: string; title: string } | null;
   variations: { slug: string; title: string; addedBy: string | null }[];
   collections: { slug: string; name: string }[];
+  /** Signed in: whether this person has added it to their own recipes. */
+  saved: boolean;
   madeCount: number;
   avgRating: number | null;
 };

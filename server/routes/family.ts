@@ -1,7 +1,7 @@
 import { Router, type Response } from 'express';
 import { and, asc, desc, eq, inArray, like, sql } from 'drizzle-orm';
 import { db } from '../db/client.js';
-import { collectionRecipes, collections, cookLogs, people, recipeNotes, recipes, users } from '../db/schema.js';
+import { collectionRecipes, collections, cookLogs, people, recipeNotes, recipes, savedRecipes, users } from '../db/schema.js';
 import { requireRole } from '../auth/session.js';
 import { invalidateSearchIndex, getSearchIndex } from '../searchIndex.js';
 import { hasRole } from '../../shared/auth.js';
@@ -82,6 +82,23 @@ familyRouter.delete('/made/:id', requireRole('contributor'), async (req, res) =>
   if (!mayChange(res.locals.user!, log.userId)) return bad(res, 403, 'Only the person who logged it (or an editor) can remove it');
   await db.delete(cookLogs).where(eq(cookLogs.id, id!));
   invalidateSearchIndex();
+  res.json({ ok: true });
+});
+
+// ---------- my recipes ----------
+
+// PUT / DELETE /api/recipes/:slug/saved: add to (or take out of) my recipes.
+familyRouter.put('/recipes/:slug/saved', requireRole('contributor'), async (req, res) => {
+  const id = await recipeId(req.params.slug);
+  if (!id) return bad(res, 404, 'Recipe not found');
+  await db.insert(savedRecipes).values({ userId: res.locals.user!.id, recipeId: id }).onConflictDoNothing();
+  res.json({ ok: true });
+});
+
+familyRouter.delete('/recipes/:slug/saved', requireRole('contributor'), async (req, res) => {
+  const id = await recipeId(req.params.slug);
+  if (!id) return bad(res, 404, 'Recipe not found');
+  await db.delete(savedRecipes).where(and(eq(savedRecipes.userId, res.locals.user!.id), eq(savedRecipes.recipeId, id)));
   res.json({ ok: true });
 });
 

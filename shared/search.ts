@@ -15,6 +15,7 @@ export type SearchDoc = {
   sourceNote: string;
   personId: number | null;
   personName: string;
+  addedByUserId: number | null;
   createdAt: number; // ms
   totalMinutes: number | null;
   photoUrl: string | null;
@@ -69,6 +70,8 @@ export type SearchParams = {
   addedTo: number | null;
   quick: Set<string>;
   tags: string[];
+  /** "Mine": recipes this person added, or originals credited to them. */
+  mine?: Mine | null;
 };
 
 type Field = { words: string[]; weight: number };
@@ -133,9 +136,22 @@ export function scoreDoc(
   return { score, missed };
 }
 
+/** Whose "Mine" this is: their account, the person their originals are credited to, and recipes they've added to their own. */
+export type Mine = { userId: number; personId: number | null; savedIds: Set<number> };
+
+/** Shared it, created it, or added it to "my recipes". */
+export function isMine(doc: SearchDoc, me: Mine): boolean {
+  return (
+    doc.addedByUserId === me.userId ||
+    (doc.sourceType === 'original' && me.personId != null && doc.personId === me.personId) ||
+    me.savedIds.has(doc.id)
+  );
+}
+
 export function filterDoc(doc: SearchDoc, p: SearchParams): boolean {
   if (p.source !== 'all' && doc.sourceType !== p.source) return false;
   if (p.personId != null && doc.personId !== p.personId) return false;
+  if (p.mine && !isMine(doc, p.mine)) return false;
   if (p.addedFrom != null && doc.createdAt < p.addedFrom) return false;
   if (p.addedTo != null && doc.createdAt > p.addedTo) return false;
   if (p.quick.has('under30') && !(doc.totalMinutes != null && doc.totalMinutes <= 30)) return false;

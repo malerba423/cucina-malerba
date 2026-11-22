@@ -6,7 +6,7 @@ import { formatMinutes, formatQuantity, formatTimer } from '../../../shared/unit
 import { groupIngredients, IngredientText, useUnitSystem } from '../ingredients';
 import { entriesFromRecipe } from '../../../shared/shopping';
 import { shopping, useShoppingEntries } from '../shoppingList';
-import { useApi } from '../api';
+import { send, useApi } from '../api';
 import { useAuth } from '../auth';
 import { canEditRecipe } from '../../../shared/auth';
 import { longDate, possessive, tintFor } from '../format';
@@ -139,6 +139,7 @@ function Recipe({ recipe, reload }: { recipe: RecipeDetail; reload: () => void }
                 Edit
               </Link>
             )}
+            {user && recipe.addedBy?.id !== user.id && <SaveButton recipe={recipe} onChanged={reload} />}
             {user && (
               <Link to={`/recipes/new?variationOf=${encodeURIComponent(recipe.slug)}`} className="button" title="Save your own version, linked to this one">
                 Make a variation
@@ -300,4 +301,27 @@ function printAs(kind: 'page' | 'card') {
   };
   window.addEventListener('afterprint', done);
   window.print();
+}
+
+/** "Add to my recipes": puts someone else's recipe under Mine without changing whose it is. */
+function SaveButton({ recipe, onChanged }: { recipe: RecipeDetail; onChanged: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const toggle = async () => {
+    setBusy(true);
+    await send(`/api/recipes/${encodeURIComponent(recipe.slug)}/saved`, recipe.saved ? 'DELETE' : 'PUT');
+    setBusy(false);
+    onChanged();
+  };
+  return (
+    <button
+      type="button"
+      className={recipe.saved ? 'button is-saved' : 'button'}
+      onClick={toggle}
+      disabled={busy}
+      aria-pressed={recipe.saved}
+      title={recipe.saved ? 'Shows under Mine on the home page. Click to take it out.' : 'Shows it under Mine on the home page'}
+    >
+      {recipe.saved ? '✓ In my recipes' : '+ Add to my recipes'}
+    </button>
+  );
 }

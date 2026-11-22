@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { asc, eq } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 import { db } from '../db/client.js';
-import { recipes, users } from '../db/schema.js';
+import { recipes, savedRecipes, users } from '../db/schema.js';
 import { getSearchIndex } from '../searchIndex.js';
-import { fridgeMatches, monthBound, searchDocs, type SearchDoc, type SearchParams } from '../../shared/search.js';
+import { fridgeMatches, isMine, monthBound, searchDocs, type Mine, type SearchDoc, type SearchParams } from '../../shared/search.js';
 import {
   ADDED_RANGES,
   SEARCH_FIELDS,
@@ -61,10 +61,13 @@ recipesRouter.get('/recipes', async (req, res) => {
     addedTo = monthBound(req.query.to, true);
   }
 
+  const me = res.locals.user;
+  const wantsMine = req.query.source === 'mine' && me != null;
   const params: SearchParams = {
     q,
     by: pick<SearchField>(req.query.by, SEARCH_FIELDS, 'any'),
     source: pick<SourceType | 'all'>(req.query.source, [...SOURCE_TYPES, 'all'], 'all'),
+    mine: wantsMine ? await mineFor(me.id) : null,
     personId: Number.isInteger(personId) && personId > 0 ? personId : null,
     addedFrom,
     addedTo,
@@ -86,9 +89,19 @@ recipesRouter.get('/recipes', async (req, res) => {
   res.json(body);
 });
 
+/** Who "Mine" means for a signed-in user: their account, and the person their originals are credited to. */
+async function mineFor(userId: number): Promise<Mine> {
+  const [[u], saved] = await Promise.all([
+    db.select({ personId: users.personId }).from(users).where(eq(users.id, userId)).limit(1),
+    db.select({ recipeId: savedRecipes.recipeId }).from(savedRecipes).where(eq(savedRecipes.userId, userId)),
+  ]);
+  return { userId, personId: u?.personId ?? null, savedIds: new Set(saved.map((s) => s.recipeId)) };
+}
+
 // GET /api/browse: counts for the sidebar drawers, people and tags.
 recipesRouter.get('/browse', async (_req, res) => {
   const { docs } = await getSearchIndex();
+  const me = res.locals.user ? await mineFor(res.locals.user.id) : null;
   const sources = new Map<SourceType, number>();
   const peopleCounts = new Map<number, { id: number; name: string; count: number }>();
   const tagCounts = new Map<string, number>();
@@ -109,6 +122,7 @@ recipesRouter.get('/browse', async (_req, res) => {
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
       .slice(0, 40),
+    mine: me ? docs.filter((d) => isMine(d, me)).length : null,
   };
   res.json(body);
 });
@@ -162,6 +176,14 @@ recipesRouter.get('/recipes/:slug', async (req, res) => {
       .where(eq(recipes.parentRecipeId, recipe.id))
       .orderBy(asc(recipes.createdAt)),
   ]);
+  const me = res.locals.user;
+  const [savedRow] = me
+    ? await db
+        .select({ recipeId: savedRecipes.recipeId })
+        .from(savedRecipes)
+        .where(and(eq(savedRecipes.userId, me.id), eq(savedRecipes.recipeId, recipe.id)))
+        .limit(1)
+    : [];
   const body: RecipeDetail = {
     slug: recipe.slug,
     title: recipe.title,
@@ -212,6 +234,7 @@ recipesRouter.get('/recipes/:slug', async (req, res) => {
     parent: parentRows[0] ?? null,
     variations: variationRows,
     collections: recipe.collections.map((c) => c.collection).sort((a, b) => a.name.localeCompare(b.name)),
+    saved: !!savedRow,
     madeCount: recipe.cookLogs.length,
     avgRating: ratings.length ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) / 10 : null,
   };

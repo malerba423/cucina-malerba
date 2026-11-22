@@ -43,6 +43,13 @@
       "when": 1795290305641,
       "tag": "0005_loud_nocturne",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795322001312,
+      "tag": "0006_same_nocturne",
+      "breakpoints": true
     }
   ]
 }

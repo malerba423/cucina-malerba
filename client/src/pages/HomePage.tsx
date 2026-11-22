@@ -13,7 +13,7 @@ import {
 } from '../../../shared/types';
 import { formatMinutes } from '../../../shared/units';
 import { useApi, useDebounced } from '../api';
-import { firstName, initials, KIND_LABEL, possessive, shortDate, stars, tintFor } from '../format';
+import { firstName, KIND_LABEL, possessive, shortDate, stars, tintFor } from '../format';
 import { useAuth } from '../auth';
 import { Link, useRouter } from '../router';
 
@@ -38,7 +38,7 @@ export function HomePage() {
   // Filters live in the URL, so "back" from a recipe returns to the same view
   // and a filtered list can be shared as a link.
   const by = oneOf<SearchField>(search.get('by'), SEARCH_FIELDS, 'any');
-  const source = oneOf<SourceType | 'all'>(search.get('source'), [...SOURCE_TYPES, 'all'], 'all');
+  const source = oneOf<SourceType | 'all' | 'mine'>(search.get('source'), [...SOURCE_TYPES, 'all', 'mine'], 'all');
   const added = oneOf<AddedRange>(search.get('added'), ADDED_RANGES, 'any');
   const urlQuery = search.get('q') ?? '';
   const person = search.get('person') ?? '';
@@ -80,7 +80,7 @@ export function HomePage() {
 
   const apiParams = new URLSearchParams(search);
   const list = useApi<RecipeListResponse>(`/api/recipes?${apiParams.toString()}`);
-  const browse = useApi<BrowseResponse>('/api/browse');
+  const browse = useApi<BrowseResponse>(`/api/browse${user ? `?u=${user.id}` : ''}`); // refetch on sign-in/out for the Mine count
 
   const toggleQuick = (key: string) => {
     const next = new Set(quick);
@@ -146,7 +146,7 @@ export function HomePage() {
               {browseData && browseData.people.length > 0 && (
           <nav className="family-row" aria-label="Recipes by family member">
             <span className="mono small muted">FROM THE FAMILY</span>
-            {browseData.people.slice(0, 8).map((p) => {
+            {browseData.people.map((p) => {
               const active = person === String(p.id);
               return (
                 <button key={p.id} type="button" className="family-pill" aria-pressed={active} onClick={() => update({ person: active ? null : String(p.id) })}>
@@ -167,7 +167,13 @@ export function HomePage() {
                 <span>Everything</span>
                 <span className="mono">{browseData?.total ?? ''}</span>
               </button>
-              {SOURCE_TYPES.map((t) => {
+              {user && (
+                <button type="button" aria-pressed={source === 'mine'} onClick={() => update({ source: 'mine' })}>
+                  <span>Mine</span>
+                  <span className="mono">{browseData?.mine ?? ''}</span>
+                </button>
+              )}
+              {SOURCE_TYPES.filter((t) => t !== 'person' && t !== 'original').map((t) => {
                 const count = browseData?.sources.find((s) => s.sourceType === t)?.count ?? 0;
                 if (!count && t === 'other') return null;
                 return (
@@ -179,32 +185,6 @@ export function HomePage() {
               })}
             </div>
           </section>
-
-          {browseData && browseData.people.length > 0 && (
-            <section>
-              <h2 className="label">Who it came from</h2>
-              <div className="people">
-                {browseData.people.map((p) => {
-                  const active = person === String(p.id);
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      className="person"
-                      aria-pressed={active}
-                      onClick={() => update({ person: active ? null : String(p.id) })}
-                    >
-                      <span className="avatar" aria-hidden="true">
-                        {initials(p.name)}
-                      </span>
-                      <span className="person-name">{p.name}</span>
-                      <span className="person-count">{p.count}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-          )}
 
           <section>
             <h2 className="label">Quick filters</h2>

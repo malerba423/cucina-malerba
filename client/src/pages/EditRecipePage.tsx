@@ -13,7 +13,7 @@ import { NotFoundPage } from './NotFoundPage';
 
 const SOURCE_CHOICES: Record<SourceType, string> = {
   person: 'A person',
-  original: 'Our original',
+  original: 'Mine',
   website: 'Website',
   social: 'Social post',
   cookbook: 'Cookbook',

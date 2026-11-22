@@ -183,6 +183,22 @@ export const collections = pgTable(
   (t) => [uniqueIndex('collections_slug_idx').on(t.slug)],
 );
 
+// "Add to my recipes": a family member's personal pick of someone else's
+// recipe. The recipe itself (its origin, who shared it) doesn't change.
+export const savedRecipes = pgTable(
+  'saved_recipes',
+  {
+    userId: integer('user_id')
+      .notNull()
+      .references((): AnyPgColumn => users.id, { onDelete: 'cascade' }),
+    recipeId: integer('recipe_id')
+      .notNull()
+      .references(() => recipes.id, { onDelete: 'cascade' }),
+    savedAt: timestamp('saved_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.recipeId] }), index('saved_recipes_recipe_idx').on(t.recipeId)],
+);
+
 export const collectionRecipes = pgTable(
   'collection_recipes',
   {

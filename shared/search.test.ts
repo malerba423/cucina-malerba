@@ -13,6 +13,7 @@ function doc(title: string, ingredients: string[], extra: Partial<SearchDoc> = {
     sourceNote: '',
     personId: null,
     personName: '',
+    addedByUserId: null,
     createdAt: Date.UTC(2026, 5, 1),
     totalMinutes: null,
     photoUrl: null,
@@ -79,6 +80,15 @@ describe('searchDocs', () => {
     const two = searchDocs(box, params({ q: 'chicken tarragon', by: 'ingredient' }));
     expect(two.map((h) => h.doc.title)).toEqual(['Chicken Piccata']);
     expect(searchDocs(box, params({ q: 'mom dad', by: 'source' })).length).toBe(0);
+  });
+  it('filters to my recipes', () => {
+    const saved = doc('Mom lemon bars', [], { addedByUserId: 2 });
+    const mine = [doc('Mine A', [], { addedByUserId: 5 }), doc('My original', [], { sourceType: 'original', personId: 9 }), saved, doc('Other', [])];
+    expect(titles(searchDocs(mine, params({ mine: { userId: 5, personId: 9, savedIds: new Set([saved.id]) } })))).toEqual([
+      'Mine A',
+      'My original',
+      'Mom lemon bars',
+    ]);
   });
   it('applies tag, person and month filters', () => {
     expect(titles(searchDocs(box, params({ tags: ['weeknight'] })))).toEqual(['Chicken Piccata']);
