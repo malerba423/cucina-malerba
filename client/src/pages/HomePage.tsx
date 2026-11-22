@@ -41,7 +41,11 @@ export function HomePage() {
   // Signed in, the page opens on "Mine" (once there's something in it); otherwise on everything.
   const browse = useApi<BrowseResponse>(ready ? `/api/browse${user ? `?u=${user.id}` : ''}` : null); // refetch on sign-in/out for the Mine count
   const browseData = browse.status === 'ok' ? browse.data : undefined;
-  const defaultSource: 'mine' | 'all' = user && (browseData?.mine ?? 0) > 0 ? 'mine' : 'all';
+  // Mine vs Everything is remembered per person on this device: the page opens on whichever you picked last
+  // (Everything the very first time, and always when signed out).
+  const [view, setView] = useState<'mine' | 'all'>('all');
+  useEffect(() => setView(user ? readView(user.id) : 'all'), [user]);
+  const defaultSource: 'mine' | 'all' = user ? view : 'all';
   const source = oneOf<SourceType | 'all' | 'mine'>(search.get('source'), [...SOURCE_TYPES, 'all', 'mine'], defaultSource);
   const added = oneOf<AddedRange>(search.get('added'), ADDED_RANGES, 'any');
   const urlQuery = search.get('q') ?? '';
@@ -69,6 +73,12 @@ export function HomePage() {
     if (choice.person) {
       next.set('person', choice.person);
       if (defaultSource !== 'all') next.set('source', 'all'); // not "Clara's within Mine"
+    } else if (choice.source === 'mine' || choice.source === 'all') {
+      // Picking Mine or Everything also makes it the view the page opens on next time.
+      if (user) {
+        saveView(user.id, choice.source);
+        setView(choice.source);
+      } else if (choice.source !== 'all') next.set('source', choice.source);
     } else if (choice.source && choice.source !== defaultSource) {
       next.set('source', choice.source);
     }
@@ -103,8 +113,8 @@ export function HomePage() {
 
   const apiParams = new URLSearchParams(search);
   if (!apiParams.has('source') && defaultSource === 'mine') apiParams.set('source', 'mine');
-  // Wait until we know who's signed in (and their Mine count) so the list doesn't flash the wrong set.
-  const settled = ready && (!user || browse.status === 'ok' || browse.status === 'error');
+  // Wait until we know who's signed in (and their saved view) so the list doesn't flash the wrong set.
+  const settled = ready && (!user || view === readView(user.id));
   const list = useApi<RecipeListResponse>(settled ? `/api/recipes?${apiParams.toString()}` : null);
 
   const toggleQuick = (key: string) => {
@@ -368,4 +378,22 @@ function SearchIcon() {
       <path d="M20 20l-4-4" />
     </svg>
   );
+}
+
+const VIEW_KEY = (userId: number) => `cucina.homeView.${userId}`;
+
+function readView(userId: number): 'mine' | 'all' {
+  try {
+    return localStorage.getItem(VIEW_KEY(userId)) === 'mine' ? 'mine' : 'all';
+  } catch {
+    return 'all';
+  }
+}
+
+function saveView(userId: number, view: 'mine' | 'all') {
+  try {
+    localStorage.setItem(VIEW_KEY(userId), view);
+  } catch {
+    // not remembered: the page just opens on Everything
+  }
 }
