@@ -46,7 +46,7 @@ describe('rate limiter', () => {
 });
 
 describe('originCheck', () => {
-  const check = originCheck(new Set(['https://kitchen.jmalerba.dev']));
+  const check = originCheck(new Set(['https://recipes.jmalerba.dev']));
   const run = (method: string, origin?: string) => {
     const req = { method, get: (h: string) => (h.toLowerCase() === 'origin' ? origin : undefined) } as unknown as Request;
     const res = { status: vi.fn().mockReturnThis(), json: vi.fn() } as unknown as Response;
@@ -59,7 +59,7 @@ describe('originCheck', () => {
     expect(run('GET').next).toHaveBeenCalled();
   });
   it('lets writes from the site through', () => {
-    expect(run('POST', 'https://kitchen.jmalerba.dev').next).toHaveBeenCalled();
+    expect(run('POST', 'https://recipes.jmalerba.dev').next).toHaveBeenCalled();
   });
   it('blocks writes from elsewhere or with no Origin', () => {
     const other = run('POST', 'https://evil.example');

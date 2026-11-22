@@ -75,7 +75,7 @@ export type FetchOptions = {
   maxRedirects?: number;
 };
 
-const USER_AGENT = 'Mozilla/5.0 (compatible; CucinaMalerba/1.0; +https://kitchen.jmalerba.dev) recipe-import';
+const USER_AGENT = 'Mozilla/5.0 (compatible; CucinaMalerba/1.0; +https://recipes.jmalerba.dev) recipe-import';
 
 export function checkUrl(raw: string | URL): URL {
   let url: URL;

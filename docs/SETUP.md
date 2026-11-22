@@ -1,11 +1,11 @@
 # One-time setup
 
-Getting milestone 1 live at **https://kitchen.jmalerba.dev**. Do the steps in order; each one ends with a check. Budget about an hour, plus waiting time for the HTTPS certificate in step 6.
+Getting milestone 1 live at **https://recipes.jmalerba.dev**. Do the steps in order; each one ends with a check. Budget about an hour, plus waiting time for the HTTPS certificate in step 6.
 
 How the pieces fit:
 
 ```
-browser ─▶ kitchen.jmalerba.dev (Cloudflare DNS, "DNS only")
+browser ─▶ recipes.jmalerba.dev (Cloudflare DNS, "DNS only")
         ─▶ Firebase Hosting (free HTTPS for the custom domain)
         ─▶ Cloud Run service "cucina-malerba" (this repo's container)
         ─▶ Neon Postgres
@@ -156,25 +156,25 @@ firebase deploy --only hosting --project "$PROJECT_ID"
 
 **Check:** `https://PROJECT_ID.web.app` shows the same hello page.
 
-## 6. Cloudflare DNS (kitchen.jmalerba.dev)
+## 6. Cloudflare DNS (recipes.jmalerba.dev)
 
-1. Firebase console → **Hosting** → **Add custom domain** → `kitchen.jmalerba.dev`.
+1. Firebase console → **Hosting** → **Add custom domain** → `recipes.jmalerba.dev`.
 2. Firebase shows the DNS records to add (a TXT record to prove you own the domain, then the records that point at Firebase).
 3. In Cloudflare → `jmalerba.dev` → **DNS → Records**, add exactly those records. For each one, set **Proxy status: DNS only** (grey cloud). If Cloudflare proxies them (orange cloud), Firebase can't verify the domain or issue the certificate.
 4. Wait for Firebase to show the domain as connected and the certificate as issued. Often minutes, sometimes a few hours.
 
-**Check:** https://kitchen.jmalerba.dev shows the hello page with a valid certificate, and
+**Check:** https://recipes.jmalerba.dev shows the hello page with a valid certificate, and
 
 ```sh
-curl -sI https://kitchen.jmalerba.dev | grep -i x-robots-tag
+curl -sI https://recipes.jmalerba.dev | grep -i x-robots-tag
 ```
 
 prints `x-robots-tag: noindex, nofollow`.
 
 ## 7. Finishing touches
 
-- Link to `https://kitchen.jmalerba.dev` from jmalerba.dev.
-- Optional: a Cloudflare **Redirect Rule** from `jmalerba.dev/projects/kitchen*` to `https://kitchen.jmalerba.dev`.
+- Link to `https://recipes.jmalerba.dev` from jmalerba.dev.
+- Optional: a Cloudflare **Redirect Rule** from `jmalerba.dev/projects/recipes*` to `https://recipes.jmalerba.dev`.
 
 ## 8. Sign-in emails (Resend) — milestone 3
 
@@ -191,7 +191,7 @@ Sign-in links go out from `noreply@jmalerba.dev` through [Resend](https://resend
      --member="serviceAccount:cucina-run@$PROJECT_ID.iam.gserviceaccount.com" --role=roles/secretmanager.secretAccessor
    ```
 6. GitHub → **Settings → Secrets and variables → Actions → Variables**: add `OWNER_EMAIL` = the email you'll sign in with.
-7. Push to `main` (or re-run Deploy). Then go to https://kitchen.jmalerba.dev/signin, enter that email, and click the link. You're the owner; invite family from your name menu → **Who can add recipes**.
+7. Push to `main` (or re-run Deploy). Then go to https://recipes.jmalerba.dev/signin, enter that email, and click the link. You're the owner; invite family from your name menu → **Who can add recipes**.
 
 **Check:** the sign-in email arrives within a minute (look in spam the first time), and the header shows your name.
 
@@ -219,7 +219,7 @@ Photos are resized in the browser (longest side 1600 px) before upload, so each 
    ```
 4. Push to `main`.
 
-**Check:** add a recipe with a photo on kitchen.jmalerba.dev; the photo's address starts with `https://storage.googleapis.com/`.
+**Check:** add a recipe with a photo on recipes.jmalerba.dev; the photo's address starts with `https://storage.googleapis.com/`.
 
 Locally, leave `GCS_BUCKET` empty in `.env`: photos are saved in `.uploads/` (git-ignored) and served at `/media`.
 
@@ -273,5 +273,5 @@ Locally, leave `ANTHROPIC_API_KEY` empty in `.env` unless you want to try it on 
 | "Tidy this up" says the spending limit has been reached | Raise the monthly limit or add credit at platform.claude.com |
 | Photos work at first, then vanish a while later | `GCS_BUCKET` isn't reaching Cloud Run (GitHub variable or the deploy.yml edit in step 9), so photos were saved inside the container |
 | Photos upload but show as broken images | The `allUsers` viewer binding in step 9 is missing |
-| "Request blocked: it did not come from this site" | The page was opened from a different address (e.g. the .web.app or .run.app URL). Use kitchen.jmalerba.dev |
+| "Request blocked: it did not come from this site" | The page was opened from a different address (e.g. the .web.app or .run.app URL). Use recipes.jmalerba.dev |
 | Custom domain stuck on "pending" | A Cloudflare record is proxied (orange cloud) or doesn't match what Firebase asked for |

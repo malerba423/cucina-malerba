@@ -2,7 +2,7 @@
   "name": "cucina-malerba",
   "version": "0.1.0",
   "private": true,
-  "description": "Cucina Malerba: a family recipe box at kitchen.jmalerba.dev",
+  "description": "Cucina Malerba: a family recipe box at recipes.jmalerba.dev",
   "type": "module",
   "engines": {
     "node": ">=24"
