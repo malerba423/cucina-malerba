@@ -32,13 +32,17 @@ function oneOf<T extends string>(value: string | null, allowed: readonly T[], fa
 }
 
 export function HomePage() {
-  const { user } = useAuth();
+  const { user, ready } = useAuth();
   const { search, navigate } = useRouter();
 
   // Filters live in the URL, so "back" from a recipe returns to the same view
   // and a filtered list can be shared as a link.
   const by = oneOf<SearchField>(search.get('by'), SEARCH_FIELDS, 'any');
-  const source = oneOf<SourceType | 'all' | 'mine'>(search.get('source'), [...SOURCE_TYPES, 'all', 'mine'], 'all');
+  // Signed in, the page opens on "Mine" (once there's something in it); otherwise on everything.
+  const browse = useApi<BrowseResponse>(ready ? `/api/browse${user ? `?u=${user.id}` : ''}` : null); // refetch on sign-in/out for the Mine count
+  const browseData = browse.status === 'ok' ? browse.data : undefined;
+  const defaultSource: 'mine' | 'all' = user && (browseData?.mine ?? 0) > 0 ? 'mine' : 'all';
+  const source = oneOf<SourceType | 'all' | 'mine'>(search.get('source'), [...SOURCE_TYPES, 'all', 'mine'], defaultSource);
   const added = oneOf<AddedRange>(search.get('added'), ADDED_RANGES, 'any');
   const urlQuery = search.get('q') ?? '';
   const person = search.get('person') ?? '';
@@ -60,7 +64,11 @@ export function HomePage() {
   const update = (changes: Record<string, string | null>) => {
     const next = new URLSearchParams(search);
     for (const [k, v] of Object.entries(changes)) {
-      if (v == null || v === '' || v === 'all' || v === 'any') next.delete(k);
+      if (k === 'source') {
+        // Only a choice that differs from the default goes in the URL ("Everything" does when Mine is the default).
+        if (v == null || v === defaultSource) next.delete(k);
+        else next.set(k, v);
+      } else if (v == null || v === '' || v === 'all' || v === 'any') next.delete(k);
       else next.set(k, v);
     }
     next.delete('sort'); // old links: there's one order now (newest first)
@@ -79,8 +87,10 @@ export function HomePage() {
   }, [debounced]);
 
   const apiParams = new URLSearchParams(search);
-  const list = useApi<RecipeListResponse>(`/api/recipes?${apiParams.toString()}`);
-  const browse = useApi<BrowseResponse>(`/api/browse${user ? `?u=${user.id}` : ''}`); // refetch on sign-in/out for the Mine count
+  if (!apiParams.has('source') && defaultSource === 'mine') apiParams.set('source', 'mine');
+  // Wait until we know who's signed in (and their Mine count) so the list doesn't flash the wrong set.
+  const settled = ready && (!user || browse.status === 'ok' || browse.status === 'error');
+  const list = useApi<RecipeListResponse>(settled ? `/api/recipes?${apiParams.toString()}` : null);
 
   const toggleQuick = (key: string) => {
     const next = new Set(quick);
@@ -99,8 +109,7 @@ export function HomePage() {
     update({ tags: next.join(',') });
   };
 
-  const filtered = urlQuery || source !== 'all' || person || added !== 'any' || quick.size > 0 || tags.length > 0;
-  const browseData = browse.status === 'ok' ? browse.data : undefined;
+  const filtered = urlQuery || source !== defaultSource || person || added !== 'any' || quick.size > 0 || tags.length > 0;
   const listData = 'data' in list ? list.data : undefined;
 
   return (
@@ -246,7 +255,7 @@ export function HomePage() {
 
         <main className="results" aria-busy={list.status === 'loading'}>
           <div className="results-head">
-            <h2>{filtered ? 'Matching recipes' : 'Recently added'}</h2>
+            <h2>{filtered ? 'Matching recipes' : source === 'mine' ? 'Your recipes' : 'Recently added'}</h2>
             <div className="results-tools">
               <span className="mono muted" aria-live="polite">
                 {listData
