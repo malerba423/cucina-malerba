@@ -1,7 +1,8 @@
 import express, { Router } from 'express';
 import { eq, like, sql } from 'drizzle-orm';
 import { db } from '../db/client.js';
-import { people, recipeIngredients, recipes, recipeSteps, recipeTags, tags, users } from '../db/schema.js';
+import { people, recipeIngredients, recipes, recipeSteps, recipeTags, tags } from '../db/schema.js';
+import { familyMembers } from '../family.js';
 import { canEditRecipe } from '../../shared/auth.js';
 import { slugify } from '../../shared/parse.js';
 import { validateRecipeInput, type RecipeInput } from '../../shared/recipeInput.js';
@@ -86,17 +87,10 @@ async function loadForEdit(slug: string) {
   return row ?? null;
 }
 
-// GET /api/people/names: everyone who has contributed so far (for the form's
-// "who" picker): people credited as a recipe's origin, and family members
-// who've shared recipes.
+// GET /api/people/names: the family (accounts and invites), for the form's
+// "who" suggestions. Anyone else can still be typed in.
 recipeWriteRouter.get('/people/names', requireRole('contributor'), async (_req, res) => {
-  const [credited, sharers] = await Promise.all([
-    db.selectDistinct({ name: people.name }).from(people).innerJoin(recipes, eq(recipes.sourcePersonId, people.id)),
-    db.selectDistinct({ name: users.name }).from(users).innerJoin(recipes, eq(recipes.addedByUserId, users.id)),
-  ]);
-  const seen = new Map<string, string>(); // case-insensitive de-dupe, first spelling wins
-  for (const { name } of [...credited, ...sharers]) if (!seen.has(name.toLowerCase())) seen.set(name.toLowerCase(), name);
-  res.json({ names: [...seen.values()].sort((a, b) => a.localeCompare(b)) });
+  res.json({ names: (await familyMembers()).names });
 });
 
 // POST /api/recipes

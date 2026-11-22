@@ -3,6 +3,7 @@ import { and, asc, eq } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { recipes, savedRecipes, users } from '../db/schema.js';
 import { getSearchIndex } from '../searchIndex.js';
+import { familyMembers } from '../family.js';
 import { fridgeMatches, isMine, monthBound, searchDocs, type Mine, type SearchDoc, type SearchParams } from '../../shared/search.js';
 import {
   ADDED_RANGES,
@@ -100,14 +101,16 @@ async function mineFor(userId: number): Promise<Mine> {
 
 // GET /api/browse: counts for the sidebar drawers, people and tags.
 recipesRouter.get('/browse', async (_req, res) => {
-  const { docs } = await getSearchIndex();
+  const [{ docs }, family] = await Promise.all([getSearchIndex(), familyMembers()]);
   const me = res.locals.user ? await mineFor(res.locals.user.id) : null;
+  // The "From the family" row: only family members (not every name credited on a recipe).
+  const isFamily = (personId: number, name: string) => family.personIds.has(personId) || family.nameKeys.has(name.trim().toLowerCase());
   const sources = new Map<SourceType, number>();
   const peopleCounts = new Map<number, { id: number; name: string; count: number }>();
   const tagCounts = new Map<string, number>();
   for (const d of docs) {
     sources.set(d.sourceType, (sources.get(d.sourceType) ?? 0) + 1);
-    if (d.personId != null) {
+    if (d.personId != null && isFamily(d.personId, d.personName)) {
       const p = peopleCounts.get(d.personId) ?? { id: d.personId, name: d.personName, count: 0 };
       p.count++;
       peopleCounts.set(d.personId, p);
