@@ -191,6 +191,12 @@ select {
   font-size: 22px;
   color: var(--brand);
   text-decoration: none;
+  white-space: nowrap;
+}
+@media (max-width: 400px) {
+  .logo {
+    white-space: normal; /* "cucina di famiglia." can take two lines on small phones */
+  }
 }
 .logo-dot {
   color: var(--accent);
@@ -1097,7 +1103,8 @@ select {
     gap: 10px;
   }
   .logo {
-    font-size: 18px;
+    font-size: 16px;
+    line-height: 1.1;
   }
   .topnav {
     display: none; /* phones: the logo goes home, Fridge is on the home page, Import is in the name menu */
