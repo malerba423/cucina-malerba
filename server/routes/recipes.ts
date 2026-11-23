@@ -37,6 +37,7 @@ export function toCard(d: SearchDoc): RecipeCard {
     title: d.title,
     sourceType: d.sourceType,
     source: d.personName || d.sourceName || null,
+    credit: d.personName || null,
     createdAt: new Date(d.createdAt).toISOString(),
     totalMinutes: d.totalMinutes,
     photoUrl: d.photoUrl,

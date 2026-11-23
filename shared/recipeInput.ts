@@ -19,7 +19,7 @@ export type RecipeInput = {
   title: string;
   description: string | null;
   sourceType: SourceType;
-  sourcePersonName: string | null; // for "person" and "original"
+  sourcePersonName: string | null; // who it's credited to: person, original, and imports (website/social)
   sourceName: string | null; // site, @handle or book
   sourceUrl: string | null;
   sourceNote: string | null;
@@ -134,7 +134,7 @@ export function validateRecipeInput(body: unknown, photoPrefixes: string[] = [])
       title: title!,
       description: str(b.description, LIMITS.text),
       sourceType: sourceType!,
-      sourcePersonName: sourceType === 'person' || sourceType === 'original' ? sourcePersonName : null,
+      sourcePersonName: sourceType === 'cookbook' || sourceType === 'other' ? null : sourcePersonName,
       sourceName: str(b.sourceName, LIMITS.short),
       sourceUrl,
       sourceNote: str(b.sourceNote, LIMITS.short),

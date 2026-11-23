@@ -246,11 +246,13 @@ function Reparse() {
   const [state, setState] = useState<{ busy: boolean; text: string | null }>({ busy: false, text: null });
   const run = async () => {
     setState({ busy: true, text: null });
-    const r = await send<{ ingredients: number; ingredientsChanged: number; steps: number; stepsChanged: number }>('/api/admin/reparse', 'POST');
+    const r = await send<{ ingredients: number; ingredientsChanged: number; steps: number; stepsChanged: number; credited: number }>('/api/admin/reparse', 'POST');
     setState({
       busy: false,
       text: r.ok
-        ? `Done. ${r.data.ingredientsChanged} of ${r.data.ingredients} ingredient lines and ${r.data.stepsChanged} of ${r.data.steps} step timers were updated.`
+        ? `Done. ${r.data.ingredientsChanged} of ${r.data.ingredients} ingredient lines and ${r.data.stepsChanged} of ${r.data.steps} step timers were updated${
+            r.data.credited ? `, and ${r.data.credited} imported recipe${r.data.credited === 1 ? ' was' : 's were'} credited to whoever added ${r.data.credited === 1 ? 'it' : 'them'}` : ''
+          }.`
         : r.error,
     });
   };

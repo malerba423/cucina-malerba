@@ -72,6 +72,12 @@ async function writeChildren(tx: Tx, recipeId: number, v: RecipeInput) {
 }
 
 /** Deletes a photo unless another recipe still uses it (a variation can share its original's photo). */
+/** Who a recipe is credited to. Links (website, social post) default to whoever is saving it. */
+async function creditFor(tx: Tx, v: RecipeInput, saverName: string): Promise<number | null> {
+  const name = v.sourcePersonName || (v.sourceType === 'website' || v.sourceType === 'social' ? saverName : null);
+  return name ? personId(tx, name) : null;
+}
+
 async function deletePhotoIfUnused(url: string | null) {
   if (!url) return;
   const [other] = await db.select({ id: recipes.id }).from(recipes).where(eq(recipes.photoUrl, url)).limit(1);
@@ -113,7 +119,7 @@ recipeWriteRouter.post('/recipes', requireRole('contributor'), async (req, res) 
       .values({
         slug,
         ...recipeColumns(v),
-        sourcePersonId: v.sourcePersonName ? await personId(tx, v.sourcePersonName) : null,
+        sourcePersonId: (await creditFor(tx, v, me.name)) ?? null,
         addedByUserId: me.id,
         parentRecipeId: parent?.id ?? null,
       })
@@ -148,7 +154,7 @@ recipeWriteRouter.put('/recipes/:slug', requireRole('contributor'), async (req, 
       .update(recipes)
       .set({
         ...recipeColumns(v),
-        sourcePersonId: v.sourcePersonName ? await personId(tx, v.sourcePersonName) : null,
+        sourcePersonId: (await creditFor(tx, v, res.locals.user!.name)) ?? null,
         updatedAt: new Date(),
       })
       .where(eq(recipes.id, existing.id));

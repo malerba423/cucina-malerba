@@ -33,7 +33,8 @@ export function rememberReturn(path: string) {
   }
 }
 
-function toForm(d: RecipeDraft): FormState {
+/** Imported recipes are credited to whoever imports them; the page they came from is the Origin / Inspiration link. */
+function toForm(d: RecipeDraft, importer: string): FormState {
   const n = (v: number | null) => (v == null ? '' : String(v));
   return {
     ...EMPTY,
@@ -43,6 +44,7 @@ function toForm(d: RecipeDraft): FormState {
     sourceName: d.sourceName,
     sourceUrl: d.sourceUrl,
     sourceNote: d.sourceNote,
+    sourcePersonName: d.sourceType === 'website' || d.sourceType === 'social' ? importer : EMPTY.sourcePersonName,
     servings: n(d.servings) || EMPTY.servings,
     yieldLabel: d.yieldLabel ?? EMPTY.yieldLabel,
     prepMinutes: n(d.prepMinutes),
@@ -124,7 +126,7 @@ export function ImportPage() {
     return (
       <RecipeForm
         key={result.key}
-        initial={toForm(draft)}
+        initial={toForm(draft, user.name)}
         defaultPerson={user.name}
         eyebrow="IMPORTED · CHECK IT OVER"
         startDirty

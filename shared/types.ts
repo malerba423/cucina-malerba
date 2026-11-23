@@ -23,6 +23,8 @@ export type RecipeCard = {
   title: string;
   sourceType: SourceType;
   source: string | null; // person's name, site, @handle or book
+  /** Who it's credited to ("Joel"), shown as "Joel's" on the card. */
+  credit: string | null;
   createdAt: string; // ISO
   totalMinutes: number | null;
   photoUrl: string | null;

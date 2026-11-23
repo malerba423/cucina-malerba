@@ -341,7 +341,7 @@ export function HomePage() {
 export function RecipeCardView({ recipe, children }: { recipe: RecipeCard; children?: ReactNode }) {
   const made = recipe.madeCount ? `MADE ${recipe.madeCount}×` : 'NOT MADE YET';
   // Family recipes lead with whose they are: "Mom’s".
-  const family = !!recipe.source && (recipe.sourceType === 'person' || recipe.sourceType === 'original');
+  const family = !!recipe.credit;
   return (
     <article className="card">
       <Link to={`/recipes/${encodeURIComponent(recipe.slug)}`} className="card-link">
@@ -353,7 +353,7 @@ export function RecipeCardView({ recipe, children }: { recipe: RecipeCard; child
           {recipe.avgRating != null && <span className="badge">{stars(recipe.avgRating)}</span>}
         </div>
         <div className="card-body ruled">
-          {family && <p className="card-family">{possessive(recipe.source!)}</p>}
+          {family && <p className="card-family">{possessive(recipe.credit!)}</p>}
           <h3>{recipe.title}</h3>
           {recipe.source && !family && (
             <p>

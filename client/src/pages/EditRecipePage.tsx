@@ -232,7 +232,13 @@ export function RecipeForm({ initial, slug, defaultPerson, eyebrow, cancel, bann
       ...prev,
       sourceType: t,
       sourcePersonName:
-        t === 'original' ? defaultPerson : prev.sourceType === 'original' && prev.sourcePersonName === defaultPerson ? '' : prev.sourcePersonName,
+        t === 'original'
+          ? defaultPerson
+          : t === 'website' || t === 'social'
+            ? prev.sourcePersonName || defaultPerson // a link is credited to whoever adds it, unless changed
+            : prev.sourceType === 'original' && prev.sourcePersonName === defaultPerson
+              ? ''
+              : prev.sourcePersonName,
     }));
     setDirty(true);
   };
@@ -303,7 +309,8 @@ export function RecipeForm({ initial, slug, defaultPerson, eyebrow, cancel, bann
     if (f.sourceName.trim() || !f.sourceUrl.trim()) return;
     try {
       const host = new URL(/^https?:\/\//i.test(f.sourceUrl) ? f.sourceUrl : `https://${f.sourceUrl}`).hostname.replace(/^www\./, '');
-      if (f.sourceType === 'website') set('sourceName', host);
+      // Not shown any more, but kept so searching "taste of home" still finds it.
+      if (f.sourceType === 'website' || f.sourceType === 'social') set('sourceName', host);
     } catch {
       // not a URL yet
     }
@@ -577,8 +584,16 @@ function SourceFields({
   defaultPerson: string;
   onUrlBlur: () => void;
 }) {
+  const familyNames = personNames.some((n) => n.toLowerCase() === defaultPerson.toLowerCase())
+    ? personNames
+    : [...personNames, defaultPerson].sort((a, b) => a.localeCompare(b));
+  const creditedTo = (
+    <Field label="Credited to">
+      <PersonPicker value={f.sourcePersonName} onChange={(v) => set('sourcePersonName', v)} names={familyNames} placeholder={defaultPerson} />
+    </Field>
+  );
   const url = (placeholder: string) => (
-    <Field label="Link" error={errors.sourceUrl}>
+    <Field label={f.sourceType === 'website' || f.sourceType === 'social' ? 'Origin / Inspiration' : 'Link'} error={errors.sourceUrl}>
       <input type="url" inputMode="url" value={f.sourceUrl} onChange={(e) => set('sourceUrl', e.target.value)} onBlur={onUrlBlur} placeholder={placeholder} />
     </Field>
   );
@@ -596,7 +611,7 @@ function SourceFields({
             <PersonPicker
               value={f.sourcePersonName}
               onChange={(v) => set('sourcePersonName', v)}
-              names={personNames.some((n) => n.toLowerCase() === defaultPerson.toLowerCase()) ? personNames : [...personNames, defaultPerson].sort((a, b) => a.localeCompare(b))}
+              names={familyNames}
               placeholder="Mom, Grandpa Lou…"
             />
           </Field>
@@ -619,18 +634,14 @@ function SourceFields({
     case 'website':
       return (
         <div className="row">
+          {creditedTo}
           {url('https://…')}
-          <Field label="Site name">
-            <input value={f.sourceName} onChange={(e) => set('sourceName', e.target.value)} placeholder="filled from the link" />
-          </Field>
         </div>
       );
     case 'social':
       return (
         <div className="row">
-          <Field label="Account">
-            <input value={f.sourceName} onChange={(e) => set('sourceName', e.target.value)} placeholder="@someone" />
-          </Field>
+          {creditedTo}
           {url('Link to the post')}
         </div>
       );

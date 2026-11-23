@@ -1,7 +1,7 @@
 import { Router, type Response } from 'express';
-import { and, asc, count, eq, isNull, ne } from 'drizzle-orm';
+import { and, asc, count, eq, inArray, isNull, ne, sql } from 'drizzle-orm';
 import { db } from '../db/client.js';
-import { invites, recipeIngredients, recipes, recipeSteps, sessions, users } from '../db/schema.js';
+import { invites, people, recipeIngredients, recipes, recipeSteps, sessions, users } from '../db/schema.js';
 import { detectTimer, parseIngredientLine } from '../../shared/parse.js';
 import { invalidateSearchIndex } from '../searchIndex.js';
 import { isRole, looksLikeEmail, normalizeEmail, type PeopleAdminResponse } from '../../shared/auth.js';
@@ -201,6 +201,21 @@ adminRouter.post('/admin/reparse', async (_req, res) => {
       stepsChanged++;
     }
   });
+  // Imports (website, social post) are credited to whoever added them; older ones weren't credited yet.
+  const uncredited = await db
+    .select({ id: recipes.id, name: users.name })
+    .from(recipes)
+    .innerJoin(users, eq(recipes.addedByUserId, users.id))
+    .where(and(inArray(recipes.sourceType, ['website', 'social']), isNull(recipes.sourcePersonId)));
+  for (const r of uncredited) {
+    const [p] = await db
+      .insert(people)
+      .values({ name: r.name })
+      .onConflictDoUpdate({ target: people.name, set: { name: sql`excluded.name` } })
+      .returning({ id: people.id });
+    await db.update(recipes).set({ sourcePersonId: p.id }).where(eq(recipes.id, r.id));
+  }
+
   invalidateSearchIndex();
-  res.json({ ingredients: ingredientRows.length, ingredientsChanged, steps: stepRows.length, stepsChanged });
+  res.json({ ingredients: ingredientRows.length, ingredientsChanged, steps: stepRows.length, stepsChanged, credited: uncredited.length });
 });

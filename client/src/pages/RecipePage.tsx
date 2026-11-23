@@ -85,12 +85,23 @@ function Recipe({ recipe, reload }: { recipe: RecipeDetail; reload: () => void }
           {recipe.description && <p className="muted">{recipe.description}</p>}
 
           <div className="source-card ruled">
-            {recipe.sourcePerson && (recipe.sourceType === 'person' || recipe.sourceType === 'original') ? (
-              <div className="family-credit">
-                From <strong>{possessive(recipe.sourcePerson)}</strong> kitchen
-                {recipe.sourceType === 'original' ? ' · an original' : ''}
-                {recipe.sourceNote ? `, ${recipe.sourceNote}` : ''}
-              </div>
+            {recipe.sourcePerson ? (
+              <>
+                <div className="family-credit">
+                  From <strong>{possessive(recipe.sourcePerson)}</strong> kitchen
+                  {recipe.sourceType === 'original' ? ' · an original' : ''}
+                  {recipe.sourceNote && !source.url ? `, ${recipe.sourceNote}` : ''}
+                </div>
+                {source.url && (
+                  <div>
+                    <span className="mono small muted">ORIGIN / INSPIRATION </span>
+                    <a href={source.url} target="_blank" rel="noopener noreferrer">
+                      <strong>{hostOf(source.url)}</strong> ↗
+                    </a>
+                    {recipe.sourceNote ? `, ${recipe.sourceNote}` : ''}
+                  </div>
+                )}
+              </>
             ) : (
             <div>
               <span className="mono small muted">SOURCE </span>
@@ -328,4 +339,13 @@ function SaveButton({ recipe, onChanged }: { recipe: RecipeDetail; onChanged: ()
       {recipe.saved ? '✓ In my recipes' : '+ Add to my recipes'}
     </button>
   );
+}
+
+/** "https://www.tasteofhome.com/recipes/…" → "tasteofhome.com" */
+function hostOf(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return url;
+  }
 }
