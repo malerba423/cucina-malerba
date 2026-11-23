@@ -155,7 +155,8 @@ adminRouter.delete('/admin/users/:id', async (req, res) => {
 
 // POST /api/admin/reparse: reads every saved ingredient and step again with the
 // current rules (parser fixes only reach recipes saved after them otherwise).
-// The text people typed never changes; only how it's read. Exact gram weights stay.
+// The text people typed never changes; only how it's read. Exact gram weights stay
+// (and lines with a weight written in, like "(455 g)", gain one).
 adminRouter.post('/admin/reparse', async (_req, res) => {
   const [ingredientRows, stepRows] = await Promise.all([
     db
@@ -167,6 +168,7 @@ adminRouter.post('/admin/reparse', async (_req, res) => {
         unit: recipeIngredients.unit,
         item: recipeIngredients.item,
         note: recipeIngredients.note,
+        weightGrams: recipeIngredients.weightGrams,
       })
       .from(recipeIngredients),
     db.select({ id: recipeSteps.id, text: recipeSteps.text, timerSeconds: recipeSteps.timerSeconds }).from(recipeSteps),
@@ -177,8 +179,18 @@ adminRouter.post('/admin/reparse', async (_req, res) => {
   await db.transaction(async (tx) => {
     for (const row of ingredientRows) {
       const p = parseIngredientLine(row.rawText);
-      const next = { quantity: p.quantity, quantityMax: p.quantityMax, unit: p.unit, item: p.item, note: p.note };
-      if (next.quantity === row.quantity && next.quantityMax === row.quantityMax && next.unit === row.unit && next.item === row.item && next.note === row.note) continue;
+      // A weight written into the line ("(455 g)") fills in exact grams, but never replaces one someone entered.
+      const weightGrams = row.weightGrams ?? p.weightGrams;
+      const next = { quantity: p.quantity, quantityMax: p.quantityMax, unit: p.unit, item: p.item, note: p.note, weightGrams };
+      if (
+        next.quantity === row.quantity &&
+        next.quantityMax === row.quantityMax &&
+        next.unit === row.unit &&
+        next.item === row.item &&
+        next.note === row.note &&
+        next.weightGrams === row.weightGrams
+      )
+        continue;
       await tx.update(recipeIngredients).set(next).where(eq(recipeIngredients.id, row.id));
       ingredientsChanged++;
     }

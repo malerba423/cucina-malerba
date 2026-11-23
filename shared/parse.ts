@@ -9,7 +9,12 @@ export type ParsedIngredient = {
   unit: string | null;
   item: string | null;
   note: string | null;
+  /** A weight written into the line, like "2 cups (455 g) water": the exact grams. */
+  weightGrams: number | null;
 };
+
+/** "(455 g)", "(455grams)", "(about 240 g)", "(1.2 kg)" */
+const WEIGHT_PAREN = /\(\s*(?:about\s+|approx\.?\s+|~\s*)?(\d+(?:\.\d+)?)\s*(g|gr|grams?|kg|kilograms?)\.?\s*\)/i;
 
 const GLYPHS: Record<string, string> = {
   '½': '1/2', '⅓': '1/3', '⅔': '2/3', '¼': '1/4', '¾': '3/4', '⅛': '1/8', '⅜': '3/8', '⅝': '5/8', '⅞': '7/8',
@@ -127,6 +132,17 @@ export function parseIngredientLine(raw: string): ParsedIngredient {
     }
   }
 
+  // A gram weight in parentheses is the exact weight, not a note.
+  let weightGrams: number | null = null;
+  const w = quantity != null ? WEIGHT_PAREN.exec(s) : null;
+  if (w) {
+    const n = Number(w[1]) * (/^k/i.test(w[2]) ? 1000 : 1);
+    if (n > 0 && n < 100_000) {
+      weightGrams = Math.round(n * 10) / 10;
+      s = `${s.slice(0, w.index)} ${s.slice(w.index + w[0].length)}`.replace(/\s+/g, ' ').replace(/\s+([,.;])/g, '$1').trim();
+    }
+  }
+
   if (quantity != null) {
     let p = takeParenthetical(s);
     if (p.paren) notes.push(p.paren);
@@ -144,9 +160,9 @@ export function parseIngredientLine(raw: string): ParsedIngredient {
   const { item, note } = splitItemNote(s, notes);
   if (quantity != null && !item) {
     // "2 cups" with nothing after it: not useful as structure.
-    return { rawText, quantity: null, quantityMax: null, unit: null, item: rawText || null, note: null };
+    return { rawText, quantity: null, quantityMax: null, unit: null, item: rawText || null, note: null, weightGrams: null };
   }
-  return { rawText, quantity, quantityMax, unit, item, note };
+  return { rawText, quantity, quantityMax, unit, item, note, weightGrams };
 }
 
 export type ParsedIngredientList = { lines: (ParsedIngredient & { groupLabel: string | null })[] };

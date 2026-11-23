@@ -106,3 +106,18 @@ describe('mixed numbers written with a hyphen', () => {
   });
 });
 
+describe('weights written into a line', () => {
+  it('takes a gram weight in parentheses as the exact weight', () => {
+    const a = parseIngredientLine('2cups (455grams) warm water');
+    expect([a.quantity, a.unit, a.item, a.note, a.weightGrams]).toEqual([2, 'cup', 'warm water', null, 455]);
+    const b = parseIngredientLine('1 cup all-purpose flour (about 120 g), sifted');
+    expect([b.item, b.note, b.weightGrams]).toEqual(['all-purpose flour', 'sifted', 120]);
+    expect(parseIngredientLine('2 lb potatoes (1.2 kg)').weightGrams).toBe(1200);
+  });
+  it('leaves other parentheses alone', () => {
+    const c = parseIngredientLine('2 (28 oz) cans tomatoes');
+    expect(c.weightGrams).toBeNull();
+    expect(parseIngredientLine('Flour (240 g) for dusting').weightGrams).toBeNull(); // no amount: kept as written
+  });
+});
+

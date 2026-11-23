@@ -11,6 +11,7 @@ import { resizePhoto, uploadPhoto } from '../image';
 import { Link, useRouter } from '../router';
 import { NotFoundPage } from './NotFoundPage';
 import { PersonPicker } from '../PersonPicker';
+import { coreWords } from '../../../shared/search';
 
 const SOURCE_CHOICES: Record<SourceType, string> = {
   person: 'A person',
@@ -197,6 +198,34 @@ export function RecipeForm({ initial, slug, defaultPerson, eyebrow, cancel, bann
     setDirty(true);
   };
 
+  // Exact grams belong to a line, not to its exact wording: when a line is
+  // edited (say "(455grams)" is deleted), its weight moves with it.
+  const changeIngredients = (text: string) => {
+    setF((prev) => {
+      const before = parseIngredientText(prev.ingredients).lines;
+      const after = parseIngredientText(text).lines;
+      const afterTexts = new Set(after.map((l) => l.rawText));
+      const beforeTexts = new Set(before.map((l) => l.rawText));
+      const weights = { ...prev.weights };
+      const claimed = new Set<string>();
+      before.forEach((line, i) => {
+        const grams = weightFor(line, prev.weights);
+        if (!grams || afterTexts.has(line.rawText)) return; // no weight, or the line is unchanged
+        // Same number of lines: it's the line in the same spot. Otherwise: the new line with the same ingredient.
+        let target: (typeof after)[number] | undefined = after.length === before.length ? after[i] : undefined;
+        if (!target || target.quantity == null || beforeTexts.has(target.rawText)) {
+          target = after.find((a) => a.quantity != null && !beforeTexts.has(a.rawText) && !claimed.has(a.rawText) && sameIngredient(a, line));
+        }
+        if (!target || claimed.has(target.rawText) || weightFor(target, prev.weights)) return; // it has its own weight
+        weights[target.rawText] = grams;
+        claimed.add(target.rawText);
+      });
+      for (const key of Object.keys(weights)) if (!afterTexts.has(key)) delete weights[key];
+      return { ...prev, ingredients: text, weights };
+    });
+    setDirty(true);
+  };
+
   // "Mine" is credited to whoever is signed in; leaving it clears that name so "A person" starts empty.
   const chooseSource = (t: SourceType) => {
     setF((prev) => ({
@@ -307,7 +336,7 @@ export function RecipeForm({ initial, slug, defaultPerson, eyebrow, cancel, bann
         unit: l.unit,
         item: l.item,
         note: l.note,
-        weightGrams: f.weights[l.rawText] ? Number(f.weights[l.rawText]) : null,
+        weightGrams: weightFor(l, f.weights) ? Number(weightFor(l, f.weights)) : null,
       })),
       steps,
       parentSlug: parentSlug ?? null,
@@ -433,7 +462,7 @@ export function RecipeForm({ initial, slug, defaultPerson, eyebrow, cancel, bann
               <textarea
                 rows={10}
                 value={f.ingredients}
-                onChange={(e) => set('ingredients', e.target.value)}
+                onChange={(e) => changeIngredients(e.target.value)}
                 placeholder={'For the crust:\n2 cups all-purpose flour\n1/2 cup powdered sugar\n1 cup butter, softened'}
               />
             </Field>
@@ -640,7 +669,7 @@ function IngredientPreview({
     <div className="parse-preview">
       <p className="small muted">
         How we read it{unread ? ` · ${unread} line${unread === 1 ? '' : 's'} kept as written (no amount found)` : ''}. Add exact grams if you
-        weigh it; Grams mode will use them.
+        weigh it (or write them in the line, like “2 cups (455 g) water”); Grams mode will use them.
       </p>
       <table>
         <thead>
@@ -669,7 +698,7 @@ function IngredientPreview({
                   className="grams"
                   inputMode="decimal"
                   aria-label={`Exact grams for ${l.rawText}`}
-                  value={weights[l.rawText] ?? ''}
+                  value={weightFor(l, weights)}
                   onChange={(e) => onWeight(l.rawText, e.target.value.replace(/[^\d.]/g, ''))}
                   disabled={l.quantity == null}
                 />
@@ -680,4 +709,14 @@ function IngredientPreview({
       </table>
     </div>
   );
+}
+
+/** The exact grams for a line: what was typed in the box, else a weight written into the line ("(455 g)"). */
+function weightFor(line: { rawText: string; weightGrams: number | null }, weights: Record<string, string>): string {
+  return weights[line.rawText] ?? (line.weightGrams != null ? String(line.weightGrams) : '');
+}
+
+function sameIngredient(a: { item: string | null; rawText: string }, b: { item: string | null; rawText: string }): boolean {
+  const key = (l: { item: string | null; rawText: string }) => coreWords(l.item ?? l.rawText).join(' ');
+  return key(a) !== '' && key(a) === key(b);
 }
