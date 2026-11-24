@@ -111,6 +111,21 @@ export const recipeSteps = pgTable(
   (t) => [index('recipe_steps_recipe_idx').on(t.recipeId, t.position)],
 );
 
+/** Helpful links for a recipe: a technique video, a how-to, anything worth having open while cooking. */
+export const recipeLinks = pgTable(
+  'recipe_links',
+  {
+    id: serial('id').primaryKey(),
+    recipeId: integer('recipe_id')
+      .notNull()
+      .references(() => recipes.id, { onDelete: 'cascade' }),
+    position: integer('position').notNull(),
+    title: text('title'),
+    url: text('url').notNull(),
+  },
+  (t) => [index('recipe_links_recipe_idx').on(t.recipeId, t.position)],
+);
+
 export const tags = pgTable(
   'tags',
   {
@@ -291,6 +306,7 @@ export const recipesRelations = relations(recipes, ({ one, many }) => ({
   addedBy: one(users, { fields: [recipes.addedByUserId], references: [users.id] }),
   ingredients: many(recipeIngredients),
   steps: many(recipeSteps),
+  links: many(recipeLinks),
   tags: many(recipeTags),
   cookLogs: many(cookLogs),
   notes: many(recipeNotes),
@@ -317,6 +333,10 @@ export const recipeIngredientsRelations = relations(recipeIngredients, ({ one })
 
 export const recipeStepsRelations = relations(recipeSteps, ({ one }) => ({
   recipe: one(recipes, { fields: [recipeSteps.recipeId], references: [recipes.id] }),
+}));
+
+export const recipeLinksRelations = relations(recipeLinks, ({ one }) => ({
+  recipe: one(recipes, { fields: [recipeLinks.recipeId], references: [recipes.id] }),
 }));
 
 export const tagsRelations = relations(tags, ({ many }) => ({

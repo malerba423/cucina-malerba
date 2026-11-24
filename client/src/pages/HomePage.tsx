@@ -20,6 +20,20 @@ import { Link, useRouter } from '../router';
 const FIELD_LABELS: Record<SearchField, string> = { any: 'Anything', name: 'Name', ingredient: 'Ingredient', source: 'Source' };
 const ADDED_LABELS: Record<AddedRange, string> = { any: 'Any time', month: 'Past month', year: 'Past year', custom: 'Pick months…' };
 const TAGS_SHOWN = 12;
+
+// How the results are laid out: photo cards or compact rows with a thumbnail. Remembered on this device.
+const LAYOUTS = ['gallery', 'list'] as const;
+type Layout = (typeof LAYOUTS)[number];
+const LAYOUT_LABELS: Record<Layout, string> = { gallery: 'Gallery', list: 'List' };
+const LAYOUT_KEY = 'cucina.homeLayout';
+function readLayout(): Layout {
+  try {
+    const saved = localStorage.getItem(LAYOUT_KEY);
+    return LAYOUTS.includes(saved as Layout) ? (saved as Layout) : 'gallery';
+  } catch {
+    return 'gallery';
+  }
+}
 const QUICK = [
   { key: 'under30', label: 'Under 30 min' },
   { key: 'never-made', label: 'Never made' },
@@ -33,6 +47,15 @@ function oneOf<T extends string>(value: string | null, allowed: readonly T[], fa
 
 export function HomePage() {
   const { user, ready } = useAuth();
+  const [layout, setLayout] = useState<Layout>(readLayout);
+  const chooseLayout = (l: Layout) => {
+    setLayout(l);
+    try {
+      localStorage.setItem(LAYOUT_KEY, l);
+    } catch {
+      // not remembered
+    }
+  };
   const { search, navigate } = useRouter();
 
   // Filters live in the URL, so "back" from a recipe returns to the same view
@@ -279,6 +302,14 @@ export function HomePage() {
           <div className="results-head">
             <h2>{filtered ? 'Matching recipes' : source === 'mine' ? 'Your recipes' : 'Recently added'}</h2>
             <div className="results-tools">
+              <div className="toggle layout-toggle" role="group" aria-label="Show recipes as">
+                {LAYOUTS.map((l) => (
+                  <button key={l} type="button" aria-pressed={layout === l} onClick={() => chooseLayout(l)} title={LAYOUT_LABELS[l]}>
+                    <LayoutIcon layout={l} />
+                    <span className="layout-label">{LAYOUT_LABELS[l]}</span>
+                  </button>
+                ))}
+              </div>
               <span className="mono muted" aria-live="polite">
                 {listData
                   ? `${listData.fullCount} ${listData.fullCount === 1 ? 'RECIPE' : 'RECIPES'}${
@@ -309,13 +340,7 @@ export function HomePage() {
           {listData && listData.fullCount === 0 && listData.recipes.length > 0 && (
             <p className="notice">No recipe has all of those words. Here are the closest.</p>
           )}
-          {listData && listData.fullCount > 0 && (
-            <div className="card-grid">
-              {listData.recipes.slice(0, listData.fullCount).map((r) => (
-                <RecipeCardView key={r.slug} recipe={r} />
-              ))}
-            </div>
-          )}
+          {listData && listData.fullCount > 0 && <RecipeResults recipes={listData.recipes.slice(0, listData.fullCount)} layout={layout} />}
           {listData && listData.recipes.length > listData.fullCount && (
             <>
               {listData.fullCount > 0 && (
@@ -323,13 +348,7 @@ export function HomePage() {
                   Partial matches <span className="small muted">missing a word or two</span>
                 </h3>
               )}
-              <div className="card-grid">
-                {listData.recipes.slice(listData.fullCount).map((r) => (
-                  <RecipeCardView key={r.slug} recipe={r}>
-                    {r.missed && <p className="small missed">No match for: {r.missed.join(', ')}</p>}
-                  </RecipeCardView>
-                ))}
-              </div>
+              <RecipeResults recipes={listData.recipes.slice(listData.fullCount)} layout={layout} />
             </>
           )}
         </main>
@@ -368,6 +387,74 @@ export function RecipeCardView({ recipe, children }: { recipe: RecipeCard; child
         </div>
       </Link>
     </article>
+  );
+}
+
+/** Whose it is ("Mom’s") or where it's from, for the list layout. */
+function creditLine(r: RecipeCard): ReactNode {
+  if (r.credit) return <span className="accent">{possessive(r.credit)}</span>;
+  return r.source ? <span className="muted">from {r.source}</span> : null;
+}
+
+const missedNote = (r: RecipeCard) => (r.missed ? <span className="small missed">No match for: {r.missed.join(', ')}</span> : null);
+
+function RecipeResults({ recipes, layout }: { recipes: RecipeCard[]; layout: Layout }) {
+  if (layout === 'list') {
+    return (
+      <ul className="recipe-list">
+        {recipes.map((r) => (
+          <li key={r.slug}>
+            <Link to={`/recipes/${encodeURIComponent(r.slug)}`} className="recipe-row">
+              <span
+                className="row-thumb"
+                aria-hidden="true"
+                style={r.photoUrl ? { backgroundImage: `url(${JSON.stringify(r.photoUrl)})` } : { backgroundColor: tintFor(r.slug) }}
+              />
+              <span className="row-main">
+                <span className="row-title">{r.title}</span>
+                <span className="row-sub small">
+                  {creditLine(r)}
+                  {missedNote(r)}
+                </span>
+              </span>
+              <span className="row-meta mono small muted">
+                {r.avgRating != null && <span>{stars(r.avgRating)}</span>}
+                {r.totalMinutes ? <span>{formatMinutes(r.totalMinutes).toUpperCase()}</span> : null}
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+  return (
+    <div className="card-grid">
+      {recipes.map((r) => (
+        <RecipeCardView key={r.slug} recipe={r}>
+          {r.missed && <p className="small missed">No match for: {r.missed.join(', ')}</p>}
+        </RecipeCardView>
+      ))}
+    </div>
+  );
+}
+
+function LayoutIcon({ layout }: { layout: Layout }) {
+  const common = { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, 'aria-hidden': true } as const;
+  if (layout === 'gallery')
+    return (
+      <svg {...common}>
+        <rect x="3" y="3" width="7.5" height="7.5" rx="1.5" />
+        <rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5" />
+        <rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5" />
+        <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5" />
+      </svg>
+    );
+  return (
+    <svg {...common} strokeLinecap="round">
+      <rect x="3" y="4" width="5" height="5" rx="1" />
+      <rect x="3" y="15" width="5" height="5" rx="1" />
+      <path d="M11 6.5h10M11 17.5h10" />
+    </svg>
   );
 }
 

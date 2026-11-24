@@ -4,6 +4,7 @@ import type { CollectionListResponse, RecipeDetail, RecipeNote } from '../../../
 import { send, useApi } from '../api';
 import { longDate } from '../format';
 import { Link } from '../router';
+import { Linkified } from '../Linkified';
 
 // The family-notebook parts of a recipe page: "made it" logs, notes and
 // collections. Everyone sees them; signed-in family can add to them.
@@ -66,7 +67,11 @@ export function MadeItSection({ recipe, me, startOpen, onChanged }: { recipe: Re
                 {log.person ? ` · ${log.person.toUpperCase()}` : ''}
                 {log.rating ? <span className="stars"> {'★'.repeat(log.rating)}</span> : null}
               </p>
-              {log.note && <p>{log.note}</p>}
+              {log.note && (
+                <p>
+                  <Linkified text={log.note} />
+                </p>
+              )}
               {mayChange(me, log.userId) && (
                 <button type="button" className="text-button small no-print" onClick={() => remove(log.id)}>
                   Remove
@@ -224,7 +229,9 @@ function NoteItem({ note, canChange, onChanged }: { note: RecipeNote; canChange:
         </form>
       ) : (
         <>
-          <p className="note-text">{note.text}</p>
+          <p className="note-text">
+            <Linkified text={note.text} />
+          </p>
           <p className="small muted">
             {note.author ?? 'Someone'} · {longDate(note.createdAt)}
             {note.updatedAt !== note.createdAt ? ' (edited)' : ''}

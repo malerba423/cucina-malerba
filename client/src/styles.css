@@ -2275,6 +2275,82 @@ select {
   font-size: 1.1em;
 }
 
+/* ---------- home: list layout ---------- */
+.results-tools {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.layout-toggle button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 10px;
+  font-size: 13px;
+}
+@media (max-width: 720px) {
+  .layout-label {
+    display: none;
+  }
+}
+.recipe-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+.recipe-list li {
+  border-bottom: 1px solid var(--line);
+}
+.recipe-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 6px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.recipe-row:hover {
+  background: var(--surface);
+}
+.row-thumb {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background: center / cover no-repeat;
+}
+.row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.row-title {
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.row-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+.row-sub .accent {
+  font-weight: 700;
+}
+.row-meta {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
 /* ---------- people (owner) ---------- */
 .people-page {
   max-width: 1120px;
@@ -2564,4 +2640,71 @@ select {
   color: var(--placeholder);
   font-style: italic;
   opacity: 1;
+}
+
+/* ---------- Links in recipe text and helpful links ---------- */
+.text-link {
+  overflow-wrap: anywhere;
+  text-underline-offset: 2px;
+}
+.helpful-links {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line-soft);
+}
+.helpful-links ul {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+.helpful-links a {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.helpful-links a:hover {
+  border-color: var(--accent);
+}
+.helpful-icon {
+  color: var(--accent);
+  flex: none;
+  width: 1em;
+  text-align: center;
+}
+.cook-links {
+  margin-top: 1.25rem;
+}
+.link-fields {
+  margin-top: 1.25rem;
+}
+.link-row {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+.link-add {
+  justify-self: start;
+}
+@media (max-width: 640px) {
+  .link-row {
+    grid-template-columns: 1fr auto;
+  }
+  .link-row input[type='url'] {
+    grid-column: 1;
+  }
+}
+@media print {
+  .helpful-links {
+    display: none;
+  }
 }

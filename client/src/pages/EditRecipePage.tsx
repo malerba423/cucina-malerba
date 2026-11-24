@@ -39,8 +39,11 @@ export type FormState = {
   tags: string;
   ingredients: string;
   steps: string;
+  links: LinkRow[];
   weights: Record<string, string>; // keyed by the ingredient line's text
 };
+
+type LinkRow = { title: string; url: string };
 
 export const EMPTY: FormState = {
   title: '',
@@ -59,6 +62,7 @@ export const EMPTY: FormState = {
   tags: '',
   ingredients: '',
   steps: '',
+  links: [],
   weights: {},
 };
 
@@ -83,6 +87,7 @@ function fromRecipe(r: RecipeDetail): FormState {
     tags: r.tags.join(', '),
     ingredients: ingredientsToText(r.ingredients),
     steps: r.steps.map((s) => s.text).join('\n'),
+    links: r.links.map((l) => ({ title: l.title ?? '', url: l.url })),
     weights,
   };
 }
@@ -346,6 +351,7 @@ export function RecipeForm({ initial, slug, defaultPerson, eyebrow, cancel, bann
         weightGrams: weightFor(l, f.weights) ? Number(weightFor(l, f.weights)) : null,
       })),
       steps,
+      links: f.links.filter((l) => l.url.trim()).map((l) => ({ title: l.title.trim() || null, url: l.url.trim() })),
       parentSlug: parentSlug ?? null,
     };
 
@@ -495,6 +501,8 @@ export function RecipeForm({ initial, slug, defaultPerson, eyebrow, cancel, bann
                 ))}
               </ol>
             )}
+
+            <LinkFields links={f.links} onChange={(links) => set('links', links)} error={errors.links} />
           </section>
 
           <aside className="editor-side">
@@ -555,6 +563,39 @@ export function RecipeForm({ initial, slug, defaultPerson, eyebrow, cancel, bann
         </div>
       </form>
     </main>
+  );
+}
+
+/** Helpful links: a video of the technique, a how-to, anything worth having open while cooking. */
+function LinkFields({ links, onChange, error }: { links: LinkRow[]; onChange: (links: LinkRow[]) => void; error?: string }) {
+  const change = (i: number, patch: Partial<LinkRow>) => onChange(links.map((l, j) => (j === i ? { ...l, ...patch } : l)));
+  return (
+    <fieldset className="field link-fields">
+      <legend className="label">Helpful links</legend>
+      <span className="small muted">Videos or how-tos worth watching while you cook: a roux, shaping dough, anything. Links typed into the steps work too.</span>
+      {links.map((l, i) => (
+        <div key={i} className="link-row">
+          <input aria-label={`Link ${i + 1} name`} value={l.title} onChange={(e) => change(i, { title: e.target.value })} placeholder="e.g. How to make a roux" />
+          <input
+            aria-label={`Link ${i + 1} address`}
+            type="url"
+            inputMode="url"
+            value={l.url}
+            onChange={(e) => change(i, { url: e.target.value })}
+            placeholder="https://youtube.com/…"
+          />
+          <button type="button" className="text-button" onClick={() => onChange(links.filter((_, j) => j !== i))} aria-label={`Remove link ${i + 1}`}>
+            Remove
+          </button>
+        </div>
+      ))}
+      {links.length < 12 && (
+        <button type="button" className="button link-add" onClick={() => onChange([...links, { title: '', url: '' }])}>
+          + Add a link
+        </button>
+      )}
+      {error && <span className="field-error">{error}</span>}
+    </fieldset>
   );
 }
 

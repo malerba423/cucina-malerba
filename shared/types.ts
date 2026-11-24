@@ -83,6 +83,7 @@ export type RecipeDetail = {
   tags: string[];
   ingredients: IngredientLine[];
   steps: { id: number; text: string; timerSeconds: number | null }[];
+  links: { id: number; title: string | null; url: string }[];
   cookLogs: { id: number; person: string | null; userId: number | null; cookedOn: string; rating: number | null; note: string | null }[];
   notes: RecipeNote[];
   /** Set when this recipe is a variation of another. */

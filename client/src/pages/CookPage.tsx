@@ -9,6 +9,7 @@ import { groupIngredients, IngredientText, useUnitSystem } from '../ingredients'
 import { Link, useRouter } from '../router';
 import { clock, remainingMs, useTimers, type Timer } from '../timers';
 import { useWakeLock } from '../wakeLock';
+import { HelpfulLinks, Linkified, withLinkLabels } from '../Linkified';
 import { NotFoundPage } from './NotFoundPage';
 
 /** /recipes/:slug/cook */
@@ -188,7 +189,7 @@ function Cook({ recipe }: { recipe: RecipeDetail }) {
             {steps.map((s, i) => (
               <li key={s.id}>
                 <button type="button" aria-current={at === i ? 'step' : undefined} className={i < at ? 'is-past' : undefined} onClick={() => go(i)}>
-                  <span className="mono">{i + 1}</span> {s.text}
+                  <span className="mono">{i + 1}</span> {withLinkLabels(s.text)}
                 </button>
               </li>
             ))}
@@ -204,7 +205,7 @@ function Cook({ recipe }: { recipe: RecipeDetail }) {
               <p className="cook-step-text">
                 {stepParts(step.text).map((part, i) =>
                   typeof part === 'string' ? (
-                    <span key={i}>{part}</span>
+                    <Linkified key={i} text={part} />
                   ) : (
                     <button
                       key={i}
@@ -265,6 +266,7 @@ function Cook({ recipe }: { recipe: RecipeDetail }) {
                 <IngredientList lines={recipe.ingredients} factor={factor} system={system} checked={checked} toggle={toggle} grouped />
               </details>
             )}
+            <HelpfulLinks links={recipe.links} className="cook-links" />
           </aside>
         )}
       </div>
@@ -310,6 +312,7 @@ function Gather({
             : `Tick things off as you get them out. ${left} to go.`}
       </p>
       <IngredientList lines={recipe.ingredients} factor={factor} system={system} checked={checked} toggle={toggle} grouped large />
+      <HelpfulLinks links={recipe.links} heading="Worth watching first" className="cook-links" />
     </section>
   );
 }

@@ -1,7 +1,7 @@
 import express, { Router } from 'express';
 import { eq, like, sql } from 'drizzle-orm';
 import { db } from '../db/client.js';
-import { people, recipeIngredients, recipes, recipeSteps, recipeTags, tags } from '../db/schema.js';
+import { people, recipeIngredients, recipeLinks, recipes, recipeSteps, recipeTags, tags } from '../db/schema.js';
 import { familyMembers } from '../family.js';
 import { canEditRecipe } from '../../shared/auth.js';
 import { slugify } from '../../shared/parse.js';
@@ -65,9 +65,11 @@ async function writeChildren(tx: Tx, recipeId: number, v: RecipeInput) {
   await tx.delete(recipeIngredients).where(eq(recipeIngredients.recipeId, recipeId));
   await tx.delete(recipeSteps).where(eq(recipeSteps.recipeId, recipeId));
   await tx.delete(recipeTags).where(eq(recipeTags.recipeId, recipeId));
+  await tx.delete(recipeLinks).where(eq(recipeLinks.recipeId, recipeId));
 
   await tx.insert(recipeIngredients).values(v.ingredients.map((i, position) => ({ recipeId, position, ...i })));
   await tx.insert(recipeSteps).values(v.steps.map((s, position) => ({ recipeId, position, ...s })));
+  if (v.links.length) await tx.insert(recipeLinks).values(v.links.map((l, position) => ({ recipeId, position, ...l })));
   for (const name of v.tags) await tx.insert(recipeTags).values({ recipeId, tagId: await tagId(tx, name) }).onConflictDoNothing();
 }
 

@@ -14,6 +14,7 @@ export type IngredientInput = {
 };
 
 export type StepInput = { text: string; timerSeconds: number | null };
+export type LinkInput = { title: string | null; url: string };
 
 export type RecipeInput = {
   title: string;
@@ -32,11 +33,25 @@ export type RecipeInput = {
   tags: string[];
   ingredients: IngredientInput[];
   steps: StepInput[];
+  /** Helpful links: technique videos, how-tos. */
+  links: LinkInput[];
   /** New variations only: the recipe this is a version of. */
   parentSlug?: string | null;
 };
 
-export const LIMITS = { title: 120, text: 2000, short: 200, ingredients: 100, steps: 60, tags: 12 };
+export const LIMITS = { title: 120, text: 2000, short: 200, ingredients: 100, steps: 60, tags: 12, links: 12 };
+
+/** A web address, with https:// added when it's left off; null if it isn't one. */
+export function cleanUrl(raw: string | null): string | null {
+  if (!raw) return null;
+  const url = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  try {
+    const u = new URL(url);
+    return u.hostname.includes('.') ? u.toString() : null;
+  } catch {
+    return null;
+  }
+}
 
 type Result = { ok: true; value: RecipeInput } | { ok: false; errors: Record<string, string> };
 
@@ -127,6 +142,22 @@ export function validateRecipeInput(body: unknown, photoPrefixes: string[] = [])
   }
   if (!steps.length) errors.steps = 'Add at least one step';
 
+  const links: LinkInput[] = [];
+  if (Array.isArray(b.links)) {
+    for (const raw of b.links.slice(0, LIMITS.links)) {
+      const l = (raw ?? {}) as Record<string, unknown>;
+      const title = str(l.title, LIMITS.short);
+      const given = str(l.url, 500);
+      if (!given) continue;
+      const url = cleanUrl(given);
+      if (!url) {
+        errors.links = `"${given.slice(0, 40)}" doesn't look like a link`;
+        continue;
+      }
+      links.push({ title, url });
+    }
+  }
+
   if (Object.keys(errors).length) return { ok: false, errors };
   return {
     ok: true,
@@ -147,6 +178,7 @@ export function validateRecipeInput(body: unknown, photoPrefixes: string[] = [])
       tags,
       ingredients,
       steps,
+      links,
       parentSlug: str(b.parentSlug, 200),
     },
   };

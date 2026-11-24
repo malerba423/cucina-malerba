@@ -164,6 +164,7 @@ recipesRouter.get('/recipes/:slug', async (req, res) => {
       addedBy: { columns: { id: true, name: true } },
       ingredients: { orderBy: (i, { asc }) => [asc(i.position)] },
       steps: { orderBy: (s, { asc }) => [asc(s.position)] },
+      links: { orderBy: (l, { asc }) => [asc(l.position)] },
       tags: { with: { tag: true } },
       cookLogs: { with: { person: true }, orderBy: (c, { desc }) => [desc(c.cookedOn), desc(c.id)] },
       notes: { with: { user: { columns: { name: true } } }, orderBy: (n, { asc }) => [asc(n.createdAt)] },
@@ -227,6 +228,7 @@ recipesRouter.get('/recipes/:slug', async (req, res) => {
       weightGrams: i.weightGrams,
     })),
     steps: recipe.steps.map((s) => ({ id: s.id, text: s.text, timerSeconds: s.timerSeconds })),
+    links: recipe.links.map((l) => ({ id: l.id, title: l.title, url: l.url })),
     cookLogs: recipe.cookLogs.map((c) => ({
       id: c.id,
       person: c.person?.name ?? null,

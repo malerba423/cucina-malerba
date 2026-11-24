@@ -12,6 +12,7 @@ import { canEditRecipe } from '../../../shared/auth';
 import { longDate, possessive, tintFor } from '../format';
 import { Link, useRouter } from '../router';
 import { CollectionsPicker, MadeItSection, NotesSection } from './RecipeFamily';
+import { HelpfulLinks, Linkified } from '../Linkified';
 import { NotFoundPage } from './NotFoundPage';
 
 export function RecipePage({ slug }: { slug: string }) {
@@ -82,7 +83,11 @@ function Recipe({ recipe, reload }: { recipe: RecipeDetail; reload: () => void }
               A variation of <Link to={`/recipes/${encodeURIComponent(recipe.parent.slug)}`}>{recipe.parent.title}</Link>
             </p>
           )}
-          {recipe.description && <p className="muted">{recipe.description}</p>}
+          {recipe.description && (
+            <p className="muted">
+              <Linkified text={recipe.description} />
+            </p>
+          )}
 
           <div className="source-card ruled">
             {recipe.sourcePerson ? (
@@ -281,7 +286,7 @@ function Recipe({ recipe, reload }: { recipe: RecipeDetail; reload: () => void }
                   {i + 1}
                 </span>
                 <p>
-                  {s.text}
+                  <Linkified text={s.text} />
                   {s.timerSeconds ? <span className="timer mono"> TIMER {formatTimer(s.timerSeconds)}</span> : null}
                 </p>
               </li>
@@ -290,6 +295,7 @@ function Recipe({ recipe, reload }: { recipe: RecipeDetail; reload: () => void }
           {system !== 'us' && /°F/.test(recipe.steps.map((s) => s.text).join(' ')) && (
             <p className="small muted">Oven temperatures are shown as written.</p>
           )}
+          <HelpfulLinks links={recipe.links} />
         </div>
       </section>
 
