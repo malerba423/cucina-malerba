@@ -200,7 +200,7 @@ export function HomePage() {
         </form>
               {browseData && browseData.people.length > 0 && (
           <nav className="family-row" aria-label="Recipes by family member">
-            <span className="mono small muted">FROM THE FAMILY</span>
+            <span className="mono small muted">WHO'S MAKING WHAT?</span>
             {browseData.people.map((p) => {
               const active = person === String(p.id);
               return (

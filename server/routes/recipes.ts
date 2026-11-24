@@ -113,7 +113,7 @@ async function mineFor(userId: number): Promise<Mine> {
 recipesRouter.get('/browse', async (_req, res) => {
   const [{ docs }, family] = await Promise.all([getSearchIndex(), familyMembers()]);
   const me = res.locals.user ? await mineFor(res.locals.user.id) : null;
-  // The "From the family" row: only family members (not every name credited on a recipe).
+  // The "WHO's MAKING WHAT?" row: only family members (not every name credited on a recipe).
   const isFamily = (personId: number, name: string) => family.personIds.has(personId) || family.nameKeys.has(name.trim().toLowerCase());
   const sources = new Map<SourceType, number>();
   const peopleCounts = new Map<number, { id: number; name: string; count: number }>();
