@@ -35,10 +35,8 @@ function readLayout(): Layout {
 }
 const QUICK = [
   { key: 'under30', label: 'Under 30 min' },
-  { key: 'never-made', label: 'Never made' },
-  { key: 'made', label: "I've made" },
-  { key: 'made-often', label: 'Made 3+ times' },
-  { key: 'rated4', label: '★ 4+' },
+  { key: 'never-made', label: 'Have not made' },
+  { key: 'made', label: "Have made" },
 ] as const;
 
 function oneOf<T extends string>(value: string | null, allowed: readonly T[], fallback: T): T {
