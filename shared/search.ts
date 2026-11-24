@@ -106,7 +106,8 @@ export function queryTerms(q: string): QueryTerm[] {
   const out: QueryTerm[] = [];
   for (const typed of q.toLowerCase().split(/[^\p{L}\p{N}'’]+/u)) {
     const [word] = words(typed);
-    if (!word || seen.has(word)) continue;
+    // A lone letter is someone still typing: it can't narrow anything usefully, so it's skipped.
+    if (!word || seen.has(word) || (word.length < 2 && !/\d/.test(word))) continue;
     seen.add(word);
     out.push({ typed: typed.replace(/['’]/g, ''), word });
   }

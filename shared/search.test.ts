@@ -103,6 +103,11 @@ describe('searchDocs', () => {
     expect(monthBound('2026-13')).toBeNull();
   });
 
+  it('ignores a lone letter instead of matching nothing', () => {
+    expect(searchDocs(box, params({ q: 'c' })).length).toBe(box.length);
+    expect(titles(searchDocs(box, params({ q: 'chicken p' })))).toEqual(['Chicken Piccata']);
+  });
+
   it("splits never made from what I've made", () => {
     const logged = [
       doc('Made by me', ['1 egg'], { madeCount: 2, madeBy: [1] }),

@@ -488,9 +488,15 @@ select {
   gap: 12px;
   font-size: 12px;
 }
-.results[aria-busy='true'] .card-grid {
+.results .card-grid,
+.results .recipe-list {
+  transition: opacity 0.15s;
+}
+/* Only dim when a search is actually slow, so quick ones don't blink. */
+.results[aria-busy='true'] .card-grid,
+.results[aria-busy='true'] .recipe-list {
   opacity: 0.6;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s 0.35s;
 }
 
 .card-grid {

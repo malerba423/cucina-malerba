@@ -78,11 +78,14 @@ export function HomePage() {
   const to = search.get('to') ?? '';
 
   const [text, setText] = useState(urlQuery);
-  const debounced = useDebounced(text.trim(), 250);
+  // Search once typing pauses, not on every key.
+  const debounced = useDebounced(text.trim(), 300);
 
   // Back/forward changes the URL under us: bring the search box in line with it.
+  // Our own typing also lands in the URL a moment later; by then the box may hold
+  // more letters, so leave it alone when the URL just caught up with what we sent.
   useEffect(() => {
-    if (urlQuery !== text.trim()) setText(urlQuery);
+    if (urlQuery !== debounced && urlQuery !== text.trim()) setText(urlQuery);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlQuery]);
 
