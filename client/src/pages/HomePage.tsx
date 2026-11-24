@@ -19,7 +19,6 @@ import { Link, useRouter } from '../router';
 
 const FIELD_LABELS: Record<SearchField, string> = { any: 'Anything', name: 'Name', ingredient: 'Ingredient', source: 'Source' };
 const ADDED_LABELS: Record<AddedRange, string> = { any: 'Any time', month: 'Past month', year: 'Past year', custom: 'Pick months…' };
-const TAGS_SHOWN = 12;
 
 // How the results are laid out: photo cards or compact rows with a thumbnail. Remembered on this device.
 const LAYOUTS = ['gallery', 'list'] as const;
@@ -37,6 +36,7 @@ function readLayout(): Layout {
 const QUICK = [
   { key: 'under30', label: 'Under 30 min' },
   { key: 'never-made', label: 'Never made' },
+  { key: 'made', label: "I've made" },
   { key: 'made-often', label: 'Made 3+ times' },
   { key: 'rated4', label: '★ 4+' },
 ] as const;
@@ -74,10 +74,8 @@ export function HomePage() {
   const urlQuery = search.get('q') ?? '';
   const person = search.get('person') ?? '';
   const quick = new Set((search.get('quick') ?? '').split(',').filter(Boolean));
-  const tags = (search.get('tags') ?? '').split(',').filter(Boolean);
   const from = search.get('from') ?? '';
   const to = search.get('to') ?? '';
-  const [allTags, setAllTags] = useState(false);
 
   const [text, setText] = useState(urlQuery);
   const debounced = useDebounced(text.trim(), 250);
@@ -120,6 +118,7 @@ export function HomePage() {
       else next.set(k, v);
     }
     next.delete('sort'); // old links: there's one order now (newest first)
+    next.delete('tags'); // old links: tags are found by searching now
     if (next.get('added') !== 'custom') {
       next.delete('from');
       next.delete('to');
@@ -135,6 +134,7 @@ export function HomePage() {
   }, [debounced]);
 
   const apiParams = new URLSearchParams(search);
+  apiParams.delete('tags');
   if (!apiParams.has('source') && defaultSource === 'mine') apiParams.set('source', 'mine');
   // Wait until we know who's signed in (and their saved view) so the list doesn't flash the wrong set.
   const settled = ready && (!user || view === readView(user.id));
@@ -143,7 +143,12 @@ export function HomePage() {
   const toggleQuick = (key: string) => {
     const next = new Set(quick);
     if (next.has(key)) next.delete(key);
-    else next.add(key);
+    else {
+      next.add(key);
+      // "Never made" and "I've made" can't both be on
+      if (key === 'never-made') next.delete('made');
+      if (key === 'made') next.delete('never-made');
+    }
     update({ quick: [...next].join(',') });
   };
 
@@ -152,12 +157,7 @@ export function HomePage() {
     update({ q: text.trim() });
   };
 
-  const toggleTag = (tag: string) => {
-    const next = tags.includes(tag) ? tags.filter((t) => t !== tag) : [...tags, tag];
-    update({ tags: next.join(',') });
-  };
-
-  const filtered = urlQuery || source !== defaultSource || person || added !== 'any' || quick.size > 0 || tags.length > 0;
+  const filtered = urlQuery || source !== defaultSource || person || added !== 'any' || quick.size > 0;
   const listData = 'data' in list ? list.data : undefined;
 
   return (
@@ -243,34 +243,13 @@ export function HomePage() {
           <section>
             <h2 className="label">Quick filters</h2>
             <div className="chips">
-              {QUICK.map((f) => (
+              {QUICK.filter((f) => f.key !== 'made' || user).map((f) => (
                 <button key={f.key} type="button" className="chip" aria-pressed={quick.has(f.key)} onClick={() => toggleQuick(f.key)}>
                   {f.label}
                 </button>
               ))}
             </div>
           </section>
-
-          {browseData && browseData.tags.length > 0 && (
-            <section>
-              <h2 className="label">Tags</h2>
-              <div className="chips">
-                {[
-                  // chosen tags stay visible even when they're past the first few
-                  ...browseData.tags.filter((t, i) => allTags || i < TAGS_SHOWN || tags.includes(t.name)),
-                ].map((t) => (
-                  <button key={t.name} type="button" className="chip" aria-pressed={tags.includes(t.name)} onClick={() => toggleTag(t.name)}>
-                    {t.name} <span className="chip-count">{t.count}</span>
-                  </button>
-                ))}
-              </div>
-              {browseData.tags.length > TAGS_SHOWN && (
-                <button type="button" className="text-button small" onClick={() => setAllTags((v) => !v)}>
-                  {allTags ? 'Fewer tags' : `All ${browseData.tags.length} tags`}
-                </button>
-              )}
-            </section>
-          )}
 
           <section>
             <label className="label" htmlFor="added">

@@ -1,4 +1,4 @@
-import { asc, eq, sql } from 'drizzle-orm';
+import { asc, eq, isNotNull, sql } from 'drizzle-orm';
 import { db } from './db/client.js';
 import { cookLogs, people, recipeIngredients, recipes, recipeTags, tags } from './db/schema.js';
 import { vocabulary, type SearchDoc } from '../shared/search.js';
@@ -34,7 +34,7 @@ async function load(): Promise<{ docs: SearchDoc[]; vocab: Set<string> }> {
   const madeCount = sql<number>`(select count(*)::int from ${cookLogs} where ${cookLogs.recipeId} = ${recipes.id})`;
   const avgRating = sql<number | null>`(select round(avg(${cookLogs.rating})::numeric, 1)::float8 from ${cookLogs} where ${cookLogs.recipeId} = ${recipes.id} and ${cookLogs.rating} is not null)`;
 
-  const [rows, ingredientRows, tagRows] = await Promise.all([
+  const [rows, ingredientRows, tagRows, madeRows] = await Promise.all([
     db
       .select({
         id: recipes.id,
@@ -66,6 +66,7 @@ async function load(): Promise<{ docs: SearchDoc[]; vocab: Set<string> }> {
       .from(recipeIngredients)
       .orderBy(asc(recipeIngredients.recipeId), asc(recipeIngredients.position)),
     db.select({ recipeId: recipeTags.recipeId, name: tags.name }).from(recipeTags).innerJoin(tags, eq(recipeTags.tagId, tags.id)),
+    db.selectDistinct({ recipeId: cookLogs.recipeId, userId: cookLogs.userId }).from(cookLogs).where(isNotNull(cookLogs.userId)),
   ]);
 
   const ingredientsBy = new Map<number, SearchDoc['ingredients']>();
@@ -76,6 +77,9 @@ async function load(): Promise<{ docs: SearchDoc[]; vocab: Set<string> }> {
   }
   const tagsBy = new Map<number, string[]>();
   for (const t of tagRows) tagsBy.set(t.recipeId, [...(tagsBy.get(t.recipeId) ?? []), t.name]);
+
+  const madeBy = new Map<number, number[]>();
+  for (const m of madeRows) madeBy.set(m.recipeId, [...(madeBy.get(m.recipeId) ?? []), m.userId!]);
 
   const docs: SearchDoc[] = rows.map((r) => ({
     id: r.id,
@@ -92,6 +96,7 @@ async function load(): Promise<{ docs: SearchDoc[]; vocab: Set<string> }> {
     totalMinutes: r.totalMinutes,
     photoUrl: r.photoUrl,
     madeCount: r.madeCount,
+    madeBy: madeBy.get(r.id) ?? [],
     avgRating: r.avgRating,
     tags: (tagsBy.get(r.id) ?? []).sort(),
     ingredients: ingredientsBy.get(r.id) ?? [],

@@ -18,6 +18,7 @@ function doc(title: string, ingredients: string[], extra: Partial<SearchDoc> = {
     totalMinutes: null,
     photoUrl: null,
     madeCount: 0,
+    madeBy: [],
     avgRating: null,
     tags: [],
     ingredients: ingredients.map((rawText) => {
@@ -100,6 +101,16 @@ describe('searchDocs', () => {
     const march = params({ addedFrom: monthBound('2026-03'), addedTo: monthBound('2026-03', true) });
     expect(titles(searchDocs(box, march))).toEqual(['Bars with Lemon Glaze']);
     expect(monthBound('2026-13')).toBeNull();
+  });
+
+  it("splits never made from what I've made", () => {
+    const logged = [
+      doc('Made by me', ['1 egg'], { madeCount: 2, madeBy: [1] }),
+      doc('Made by Mom', ['1 egg'], { madeCount: 1, madeBy: [2] }),
+      doc('Untried', ['1 egg']),
+    ];
+    expect(titles(searchDocs(logged, params({ quick: new Set(['made']), userId: 1 })))).toEqual(['Made by me']);
+    expect(titles(searchDocs(logged, params({ quick: new Set(['never-made']) })))).toEqual(['Untried']);
   });
 });
 

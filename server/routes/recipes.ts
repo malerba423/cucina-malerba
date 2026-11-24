@@ -70,6 +70,7 @@ recipesRouter.get('/recipes', async (req, res) => {
     by: pick<SearchField>(req.query.by, SEARCH_FIELDS, 'any'),
     source: pick<SourceType | 'all'>(req.query.source, [...SOURCE_TYPES, 'all'], 'all'),
     mine: wantsMine ? await mineFor(me.id) : null,
+    userId: me?.id ?? null,
     personId: Number.isInteger(personId) && personId > 0 ? personId : null,
     addedFrom,
     addedTo,

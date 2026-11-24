@@ -20,6 +20,8 @@ export type SearchDoc = {
   totalMinutes: number | null;
   photoUrl: string | null;
   madeCount: number;
+  /** Accounts that have logged making it. */
+  madeBy: number[];
   avgRating: number | null;
   tags: string[];
   ingredients: { item: string | null; rawText: string; groupLabel: string | null; note: string | null }[];
@@ -72,6 +74,8 @@ export type SearchParams = {
   tags: string[];
   /** "Mine": recipes this person added, or originals credited to them. */
   mine?: Mine | null;
+  /** Who's searching, for "I've made". */
+  userId?: number | null;
 };
 
 type Field = { words: string[]; weight: number };
@@ -168,6 +172,7 @@ export function filterDoc(doc: SearchDoc, p: SearchParams): boolean {
   if (p.addedTo != null && doc.createdAt > p.addedTo) return false;
   if (p.quick.has('under30') && !(doc.totalMinutes != null && doc.totalMinutes <= 30)) return false;
   if (p.quick.has('never-made') && doc.madeCount > 0) return false;
+  if (p.quick.has('made') && !(p.userId != null ? doc.madeBy.includes(p.userId) : doc.madeCount > 0)) return false;
   if (p.quick.has('rated4') && !(doc.avgRating != null && doc.avgRating >= 4)) return false;
   if (p.quick.has('made-often') && doc.madeCount < 3) return false;
   for (const t of p.tags) if (!doc.tags.includes(t)) return false;
