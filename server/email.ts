@@ -31,7 +31,7 @@ function escapeHtml(s: string): string {
 export function linkEmail(opts: { heading: string; intro: string; button: string; url: string; footer: string }) {
   const html = `<!doctype html><html><body style="margin:0;padding:24px;background:#f5f6f1;font-family:Inter,Helvetica,Arial,sans-serif;color:#1e2a2f">
 <div style="max-width:480px;margin:0 auto;background:#ffffff;border:1px solid #d5dad1;border-top:4px solid #b23a28;border-radius:0 0 12px 12px;padding:24px">
-<p style="margin:0 0 4px;font-weight:800;font-size:18px;color:#1f3d2b">cucina di famiglia<span style="color:#b23a28">.</span></p>
+<p style="margin:0 0 4px;font-weight:800;font-size:18px;color:#1f3d2b">family cookbook<span style="color:#b23a28">.</span></p>
 <h1 style="margin:16px 0 8px;font-size:22px;color:#1f3d2b">${escapeHtml(opts.heading)}</h1>
 <p style="margin:0 0 20px;line-height:1.5">${escapeHtml(opts.intro)}</p>
 <p style="margin:0 0 20px"><a href="${escapeHtml(opts.url)}" style="display:inline-block;background:#b23a28;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 20px;border-radius:99px">${escapeHtml(opts.button)}</a></p>

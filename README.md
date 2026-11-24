@@ -1,4 +1,4 @@
-# Cucina Malerba
+# Family Cookbook
 
 The Malerba family cookbook at **[recipes.jmalerba.dev](https://recipes.jmalerba.dev)**. Anyone can browse recipes, cook from them and keep a shopping list on their own device. Only invited family can add or change recipes.
 

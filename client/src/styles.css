@@ -195,7 +195,7 @@ select {
 }
 @media (max-width: 400px) {
   .logo {
-    white-space: normal; /* "cucina di famiglia." can take two lines on small phones */
+    white-space: normal; /* "family cookbook." can take two lines on small phones */
   }
 }
 .logo-dot {
