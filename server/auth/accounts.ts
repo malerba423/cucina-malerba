@@ -2,7 +2,8 @@ import { and, count, eq, isNull, sql } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { invites, loginTokens, people, users } from '../db/schema.js';
 import { env } from '../env.js';
-import { linkEmail, sendEmail } from '../email.js';
+import { letterEmail, linkEmail, sendEmail } from '../email.js';
+import { INVITE_BUTTON, INVITE_LETTER, INVITE_SUBJECT } from './inviteLetter.js';
 import { SITE_NAME } from '../../shared/site.js';
 import type { Me, Role } from '../../shared/auth.js';
 import { hashToken, newToken } from './crypto.js';
@@ -51,14 +52,16 @@ export async function sendSignInLink(email: string): Promise<void> {
 
 export async function sendInvite(invite: { email: string; name: string }, inviterName: string): Promise<void> {
   const token = await createLinkToken(invite.email, INVITE_LINK_DAYS * 24 * 60 * MINUTE);
-  const { html, text } = linkEmail({
-    heading: `${inviterName} invited you to ${SITE_NAME}`,
-    intro: `Hi ${invite.name}, you can now add family recipes to ${SITE_NAME}. This button signs you in; it works once within ${INVITE_LINK_DAYS} days. After that, sign in any time from the site with your email.`,
-    button: 'Accept and sign in',
+  const first = (name: string) => name.trim().split(/\s+/)[0] || name;
+  const { html, text } = letterEmail({
+    paragraphs: INVITE_LETTER.map((p) => p.replaceAll('{name}', first(invite.name))),
+    signOff: 'Love,',
+    signature: first(inviterName),
+    button: INVITE_BUTTON,
     url: verifyUrl(token),
-    footer: "If this doesn't look familiar, you can ignore this email.",
+    footer: `The button signs you in (it works once, within ${INVITE_LINK_DAYS} days). After that, sign in any time at ${env.appUrl.replace(/^https?:\/\//, '')} with this email address.`,
   });
-  await sendEmail({ to: invite.email, subject: `${inviterName} invited you to ${SITE_NAME}`, html, text });
+  await sendEmail({ to: invite.email, subject: INVITE_SUBJECT, html, text, fromName: first(inviterName) });
 }
 
 /** Links a user to a person row by name (so "Mom" the user and "Mom" the recipe source are the same). */
