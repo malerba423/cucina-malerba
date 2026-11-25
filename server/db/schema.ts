@@ -257,6 +257,8 @@ export const invites = pgTable(
     id: serial('id').primaryKey(),
     email: text('email').notNull(),
     name: text('name').notNull(),
+    /** What the invite email calls them ("Hey smoochiekins!"); their first name when empty. */
+    greeting: text('greeting'),
     role: userRole('role').notNull(),
     invitedByUserId: integer('invited_by_user_id').references(() => users.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

@@ -2714,3 +2714,9 @@ select {
     display: none;
   }
 }
+
+.greeting-button {
+  align-self: flex-start;
+  padding: 0;
+  text-align: left;
+}

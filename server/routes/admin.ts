@@ -62,6 +62,7 @@ adminRouter.get('/admin/people', async (_req, res) => {
       id: i.id,
       email: i.email,
       name: i.name,
+      greeting: i.greeting,
       role: i.role,
       createdAt: i.createdAt.toISOString(),
       lastSentAt: i.lastSentAt?.toISOString() ?? null,
@@ -77,6 +78,7 @@ adminRouter.post('/admin/invites', async (req, res) => {
   const email = typeof req.body?.email === 'string' ? normalizeEmail(req.body.email) : '';
   const name = typeof req.body?.name === 'string' ? req.body.name.trim().slice(0, 60) : '';
   const role = req.body?.role;
+  const greeting = greetingParam(req.body?.greeting);
   if (!looksLikeEmail(email)) return bad(res, 400, "That doesn't look like an email address");
   if (!name) return bad(res, 400, 'Add a name, the way the family would say it ("Mom", "Sam")');
   if (!isRole(role)) return bad(res, 400, 'Pick what they can do');
@@ -86,8 +88,8 @@ adminRouter.post('/admin/invites', async (req, res) => {
 
   const [invite] = await db
     .insert(invites)
-    .values({ email, name, role, invitedByUserId: res.locals.user!.id, lastSentAt: null })
-    .onConflictDoUpdate({ target: invites.email, set: { name, role } })
+    .values({ email, name, greeting, role, invitedByUserId: res.locals.user!.id, lastSentAt: null })
+    .onConflictDoUpdate({ target: invites.email, set: { name, greeting, role } })
     .returning({ id: invites.id });
 
   res.status(201).json({ ok: true, id: invite.id });
@@ -107,6 +109,19 @@ adminRouter.post(['/admin/invites/:id/send', '/admin/invites/:id/resend'], async
   await db.update(invites).set({ lastSentAt: new Date() }).where(eq(invites.id, invite.id));
   res.json({ ok: true });
 });
+
+// PATCH /api/admin/invites/:id { greeting }: what the invite email calls them. Empty means their first name.
+adminRouter.patch('/admin/invites/:id', async (req, res) => {
+  const id = idParam(String(req.params.id));
+  if (!id) return bad(res, 404, 'Invite not found');
+  const [row] = await db.update(invites).set({ greeting: greetingParam(req.body?.greeting) }).where(eq(invites.id, id)).returning({ id: invites.id });
+  if (!row) return bad(res, 404, 'Invite not found');
+  res.json({ ok: true });
+});
+
+function greetingParam(v: unknown): string | null {
+  return typeof v === 'string' && v.trim() ? v.trim().slice(0, 40) : null;
+}
 
 // DELETE /api/admin/invites/:id
 adminRouter.delete('/admin/invites/:id', async (req, res) => {

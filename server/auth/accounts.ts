@@ -50,11 +50,11 @@ export async function sendSignInLink(email: string): Promise<void> {
   await sendEmail({ to: email, subject: `Your ${SITE_NAME} sign-in link`, html, text });
 }
 
-export async function sendInvite(invite: { email: string; name: string }, inviterName: string): Promise<void> {
+export async function sendInvite(invite: { email: string; name: string; greeting?: string | null }, inviterName: string): Promise<void> {
   const token = await createLinkToken(invite.email, INVITE_LINK_DAYS * 24 * 60 * MINUTE);
   const first = (name: string) => name.trim().split(/\s+/)[0] || name;
   const { html, text } = letterEmail({
-    paragraphs: INVITE_LETTER.map((p) => p.replaceAll('{name}', first(invite.name))),
+    paragraphs: INVITE_LETTER.map((p) => p.replaceAll('{name}', invite.greeting || first(invite.name))),
     signOff: 'Love,',
     signature: first(inviterName),
     button: INVITE_BUTTON,

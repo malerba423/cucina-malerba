@@ -1,5 +1,6 @@
 // The invite email, written as a note from Joel rather than a system message.
-// Edit the wording freely: {name} is the invitee's first name.
+// Edit the wording freely: {name} is what you call them (set per person on the People
+// page, e.g. "smoochiekins"), or their first name if you haven't set one.
 
 export const INVITE_SUBJECT = 'I made us a family cookbook';
 

@@ -81,6 +81,7 @@ export function PeoplePage() {
 function InviteForm({ onInvited }: { onInvited: () => void }) {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
+  const [greeting, setGreeting] = useState('');
   const [role, setRole] = useState<Role>('contributor');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
@@ -89,12 +90,13 @@ function InviteForm({ onInvited }: { onInvited: () => void }) {
     e.preventDefault();
     setBusy(true);
     setMessage(null);
-    const result = await send('/api/admin/invites', 'POST', { email, name, role });
+    const result = await send('/api/admin/invites', 'POST', { email, name, greeting, role });
     setBusy(false);
     if (result.ok) {
       setMessage({ kind: 'ok', text: `Added ${name}. Send the invite from their row when you're ready.` });
       setEmail('');
       setName('');
+      setGreeting('');
       onInvited();
     } else {
       setMessage({ kind: 'error', text: result.error });
@@ -110,6 +112,10 @@ function InviteForm({ onInvited }: { onInvited: () => void }) {
       <label className="field grow">
         <span className="label">Email</span>
         <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="mom@example.com" />
+      </label>
+      <label className="field">
+        <span className="label">Email says “Hey …”</span>
+        <input value={greeting} onChange={(e) => setGreeting(e.target.value)} placeholder={name.trim().split(/\s+/)[0] || 'mom'} maxLength={40} />
       </label>
       <label className="field">
         <span className="label">Can</span>
@@ -210,6 +216,14 @@ function InviteRow({ invite, onChanged }: { invite: PeopleAdminResponse['invites
     setNote(r.ok ? `Invite emailed to ${invite.email}.` : r.error);
     if (r.ok) onChanged();
   };
+  const changeGreeting = async () => {
+    const first = invite.name.trim().split(/\s+/)[0];
+    const next = window.prompt(`What should the invite email call ${invite.name}? ("Hey ___!") Leave empty for "${first}".`, invite.greeting ?? '');
+    if (next === null) return;
+    const r = await send(`/api/admin/invites/${invite.id}`, 'PATCH', { greeting: next });
+    setNote(r.ok ? null : r.error);
+    if (r.ok) onChanged();
+  };
   const remove = async () => {
     if (!window.confirm(`Remove ${invite.name} (${invite.email})? They won't be able to sign in.`)) return;
     await send(`/api/admin/invites/${invite.id}`, 'DELETE');
@@ -226,6 +240,9 @@ function InviteRow({ invite, onChanged }: { invite: PeopleAdminResponse['invites
         <span className="small muted">
           {invite.email} · {sent ? `invite sent ${longDate(invite.lastSentAt!)}` : 'not invited yet'} · hasn't signed in
         </span>
+        <button type="button" className="text-button small greeting-button" onClick={changeGreeting} title="Change what the invite email calls them">
+          Email says “Hey {invite.greeting || invite.name.trim().split(/\s+/)[0]}!” · change
+        </button>
         {note && <span className="small muted">{note}</span>}
       </div>
       <span className="pill mono">

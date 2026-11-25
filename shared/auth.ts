@@ -41,5 +41,5 @@ export type MeResponse = { user: Me | null };
 
 export type PeopleAdminResponse = {
   users: { id: number; email: string; name: string; role: Role; createdAt: string; lastSeenAt: string | null; recipeCount: number; isYou: boolean }[];
-  invites: { id: number; email: string; name: string; role: Role; createdAt: string; lastSentAt: string | null }[];
+  invites: { id: number; email: string; name: string; greeting: string | null; role: Role; createdAt: string; lastSentAt: string | null }[];
 };
