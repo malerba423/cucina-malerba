@@ -2,7 +2,7 @@
 // Edit the wording freely: {name} is what you call them (set per person on the People
 // page, e.g. "smoochiekins"), or their first name if you haven't set one.
 
-export const INVITE_SUBJECT = 'I made us a family cookbook';
+export const INVITE_SUBJECT = '? Recipe book thingy maybe';
 
 export const INVITE_LETTER = [
   'Hey {name}! I built this little cookbook app and figured it might be a nice way for all of us to share recipes!',

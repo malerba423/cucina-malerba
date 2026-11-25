@@ -1,7 +1,6 @@
 import { env } from './env.js';
-import { SITE_NAME } from '../shared/site.js';
 
-export type Email = { to: string; subject: string; text: string; html: string; /** Shown as "<fromName> via Family Cookbook". */ fromName?: string };
+export type Email = { to: string; subject: string; text: string; html: string; /** Sender name shown instead of the site's ("Joel Malerba"). */ fromName?: string };
 
 /**
  * Sends through Resend when RESEND_API_KEY is set. Without it (local dev),
@@ -24,13 +23,11 @@ export async function sendEmail(email: Email): Promise<void> {
   }
 }
 
-/** "Joel via Family Cookbook <noreply@…>" when a person is sending, else the site's own sender. */
+/** "Joel Malerba <noreply@…>" when a person is sending, else the site's own sender. */
 function fromLine(fromName?: string): string {
   if (!fromName) return env.emailFrom;
-  const m = /^(.*?)\s*<([^>]+)>$/.exec(env.emailFrom);
-  const site = m?.[1] || SITE_NAME;
-  const address = m?.[2] ?? env.emailFrom;
-  return `${fromName.replace(/[<>"]/g, '')} via ${site.replace(/^"|"$/g, '')} <${address}>`;
+  const address = /<([^>]+)>\s*$/.exec(env.emailFrom)?.[1] ?? env.emailFrom;
+  return `${fromName.replace(/[<>"]/g, '')} <${address}>`;
 }
 
 function escapeHtml(s: string): string {

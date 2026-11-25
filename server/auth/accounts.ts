@@ -61,7 +61,7 @@ export async function sendInvite(invite: { email: string; name: string; greeting
     url: verifyUrl(token),
     footer: `The button signs you in (it works once, within ${INVITE_LINK_DAYS} days). After that, sign in any time at ${env.appUrl.replace(/^https?:\/\//, '')} with this email address.`,
   });
-  await sendEmail({ to: invite.email, subject: INVITE_SUBJECT, html, text, fromName: first(inviterName) });
+  await sendEmail({ to: invite.email, subject: INVITE_SUBJECT, html, text, fromName: inviterName });
 }
 
 /** Links a user to a person row by name (so "Mom" the user and "Mom" the recipe source are the same). */
